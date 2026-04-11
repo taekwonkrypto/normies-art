@@ -2,10 +2,18 @@
   box-sizing: border-box;
 }
 
+:root {
+  --bg: #e3e5e4;
+  --fg: #48494b;
+  --fg-rgb: 72, 73, 75;
+  --bg-rgb: 227, 229, 228;
+}
+
 body {
   margin: 0;
-  background: #0f0f0f;
-  color: #ccc;
-  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  image-rendering: pixelated;
+  font-family: "Courier New", monospace;
   -webkit-font-smoothing: antialiased;
 }
