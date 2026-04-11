@@ -29,9 +29,13 @@ function applyColorway(svgText, cw) {
 
 function checkCustomized(traits) {
   if (Array.isArray(traits)) {
-    return traits.some(t => t.trait_type === 'Customized' && t.value === 'Yes')
+    return traits.some(
+      t => t.trait_type?.toLowerCase() === 'customized' &&
+           t.value?.toLowerCase()      === 'yes'
+    )
   }
-  return traits['Customized'] === 'Yes'
+  const val = traits['Customized'] ?? traits['customized']
+  return typeof val === 'string' && val.toLowerCase() === 'yes'
 }
 
 function formatDate(ts) {
@@ -101,15 +105,25 @@ function App() {
   // Fetch version list if normie is customized
   useEffect(() => {
     if (!normie) { setVersions(null); return }
-    if (!checkCustomized(normie.traits)) { setVersions(null); return }
+    const customized = checkCustomized(normie.traits)
+    console.log(`[normie #${normie.id}] checkCustomized:`, customized, '| traits:', normie.traits)
+    if (!customized) { setVersions(null); return }
     const controller = new AbortController()
-    fetch(`${API_BASE}/history/normie/${normie.id}/versions`, { signal: controller.signal })
-      .then(r => r.json())
+    const url = `${API_BASE}/history/normie/${normie.id}/versions`
+    console.log(`[normie #${normie.id}] fetching versions:`, url)
+    fetch(url, { signal: controller.signal })
+      .then(r => { console.log(`[normie #${normie.id}] /versions status:`, r.status); return r.json() })
       .then(data => {
+        console.log(`[normie #${normie.id}] /versions data:`, data)
         setVersions(data)
         setActiveVersionIdx(data.length - 1)
       })
-      .catch(err => { if (err.name !== 'AbortError') setVersions([]) })
+      .catch(err => {
+        if (err.name !== 'AbortError') {
+          console.error(`[normie #${normie.id}] /versions error:`, err)
+          setVersions([])
+        }
+      })
     return () => controller.abort()
   }, [normie?.id])
 
@@ -202,7 +216,16 @@ function App() {
       const res = await fetch(`${API_BASE}/normie/${id}/traits`)
       if (!res.ok) throw new Error(`Token #${id} not found (${res.status})`)
       const data = await res.json()
+      console.log(`[normie #${id}] /traits raw:`, data)
       const traits = data.attributes ?? data
+      console.log(`[normie #${id}] traits used for checks:`, traits)
+
+      // Also probe /metadata to see its shape
+      fetch(`${API_BASE}/normie/${id}/metadata`)
+        .then(r => r.json())
+        .then(meta => console.log(`[normie #${id}] /metadata raw:`, meta))
+        .catch(err => console.log(`[normie #${id}] /metadata unavailable:`, err.message))
+
       setNormie({ id, traits })
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
