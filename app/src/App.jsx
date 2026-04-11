@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import GIF from 'gif.js'
 import './App.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -81,6 +82,8 @@ function App() {
   const [activeVersionIdx, setActiveVersionIdx] = useState(null)
   const [versionSvgTexts, setVersionSvgTexts] = useState({})
   const [playing, setPlaying]                 = useState(false)
+  const [frameDelay, setFrameDelay]           = useState(1500)
+  const [downloadingGif, setDownloadingGif]   = useState(false)
   const playIntervalRef                       = useRef(null)
 
   // Fetch current normie SVG
@@ -161,9 +164,63 @@ function App() {
     if (!playing || !versions) return
     playIntervalRef.current = setInterval(() => {
       setActiveVersionIdx(prev => (prev + 1) % versions.length)
-    }, 1500)
+    }, frameDelay)
     return () => clearInterval(playIntervalRef.current)
-  }, [playing, versions])
+  }, [playing, versions, frameDelay])
+
+  async function downloadGif() {
+    if (!versions || versions.length < 2) return
+    setDownloadingGif(true)
+    try {
+      const cw = COLORWAYS.find(c => c.id === colorway)
+      const SIZE = 600
+      const gif = new GIF({
+        workers: 2,
+        quality: 10,
+        width: SIZE,
+        height: SIZE,
+        workerScript: '/gif.worker.js',
+        repeat: 0,
+      })
+      for (const v of versions) {
+        const text = versionSvgTexts[v.version]
+        if (!text) continue
+        const modified = applyColorway(text, cw)
+        const blob = new Blob([modified], { type: 'image/svg+xml' })
+        const url = URL.createObjectURL(blob)
+        await new Promise((resolve, reject) => {
+          const img = new Image()
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            canvas.width = SIZE
+            canvas.height = SIZE
+            canvas.getContext('2d').drawImage(img, 0, 0, SIZE, SIZE)
+            URL.revokeObjectURL(url)
+            gif.addFrame(canvas, { delay: frameDelay, copy: true })
+            resolve()
+          }
+          img.onerror = (e) => { URL.revokeObjectURL(url); reject(e) }
+          img.src = url
+        })
+      }
+      await new Promise((resolve, reject) => {
+        gif.on('finished', pngBlob => {
+          const a = document.createElement('a')
+          a.href = URL.createObjectURL(pngBlob)
+          a.download = `normie-${normie.id}-${colorway}.gif`
+          a.click()
+          URL.revokeObjectURL(a.href)
+          resolve()
+        })
+        gif.on('abort', () => reject(new Error('aborted')))
+        gif.render()
+      })
+    } catch (err) {
+      console.error('GIF export failed:', err)
+    } finally {
+      setDownloadingGif(false)
+    }
+  }
 
   async function downloadPng() {
     if (!svgText || !normie) return
@@ -306,12 +363,30 @@ function App() {
               <div className="version-header">
                 <span className="version-label">Version History</span>
                 {versions.length > 1 && (
-                  <button
-                    className="play-btn"
-                    onClick={() => setPlaying(p => !p)}
-                  >
-                    {playing ? 'Stop' : 'Play'}
-                  </button>
+                  <div className="version-controls">
+                    <div className="delay-control">
+                      <input
+                        type="number"
+                        className="delay-input"
+                        min="100"
+                        max="5000"
+                        step="100"
+                        value={frameDelay}
+                        onChange={e => setFrameDelay(Math.max(100, Number(e.target.value)))}
+                      />
+                      <span className="delay-unit">ms</span>
+                    </div>
+                    <button className="play-btn" onClick={() => setPlaying(p => !p)}>
+                      {playing ? 'Stop' : 'Play'}
+                    </button>
+                    <button
+                      className="play-btn"
+                      onClick={downloadGif}
+                      disabled={downloadingGif}
+                    >
+                      {downloadingGif ? 'Encoding…' : 'GIF'}
+                    </button>
+                  </div>
                 )}
               </div>
               <div className="filmstrip">
