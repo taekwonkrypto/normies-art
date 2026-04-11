@@ -1,120 +1,103 @@
 import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
 import './App.css'
 
+const API_BASE = 'https://api.normies.art'
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [inputId, setInputId] = useState('')
+  const [normie, setNormie] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
+
+  async function loadNormie() {
+    const id = parseInt(inputId, 10)
+    if (isNaN(id) || id < 0 || id > 9999) {
+      setError('Please enter a valid token ID between 0 and 9999.')
+      setNormie(null)
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    setNormie(null)
+
+    try {
+      const res = await fetch(`${API_BASE}/normie/${id}/traits`)
+      if (!res.ok) {
+        throw new Error(`Token #${id} not found (${res.status})`)
+      }
+      const data = await res.json()
+      const traits = data.attributes ?? data
+      setNormie({ id, traits })
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === 'Enter') loadNormie()
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
+    <div className="app">
+      <header className="header">
+        <h1 className="title">Normies Art Tools</h1>
+        <p className="subtitle">Enter a Normie token ID to get started</p>
+      </header>
+
+      <div className="input-row">
+        <input
+          className="token-input"
+          type="number"
+          min="0"
+          max="9999"
+          placeholder="Token ID (0–9999)"
+          value={inputId}
+          onChange={(e) => setInputId(e.target.value)}
+          onKeyDown={handleKeyDown}
+        />
+        <button className="load-btn" onClick={loadNormie} disabled={loading}>
+          {loading ? 'Loading…' : 'Load Normie'}
         </button>
-      </section>
+      </div>
 
-      <div className="ticks"></div>
+      {error && <p className="error">{error}</p>}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      {loading && (
+        <div className="loading">
+          <div className="spinner" />
+          <span>Fetching Normie…</span>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      {normie && !loading && (
+        <div className="normie-card">
+          <h2 className="normie-title">Normie #{normie.id}</h2>
+          <img
+            className="normie-image"
+            src={`${API_BASE}/normie/${normie.id}/image.svg`}
+            alt={`Normie #${normie.id}`}
+          />
+          <div className="traits">
+            {Array.isArray(normie.traits)
+              ? normie.traits.map((trait, i) => (
+                  <div className="trait" key={i}>
+                    <span className="trait-type">{trait.trait_type}</span>
+                    <span className="trait-value">{trait.value}</span>
+                  </div>
+                ))
+              : Object.entries(normie.traits).map(([key, val]) => (
+                  <div className="trait" key={key}>
+                    <span className="trait-type">{key}</span>
+                    <span className="trait-value">{String(val)}</span>
+                  </div>
+                ))}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
