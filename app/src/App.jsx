@@ -40,7 +40,9 @@ function checkCustomized(traits) {
 
 function formatDate(ts) {
   if (!ts) return ''
-  return new Date(ts)
+  // Timestamps from the API are Unix seconds (10 digits) as strings
+  const ms = String(ts).length <= 10 ? parseInt(ts, 10) * 1000 : parseInt(ts, 10)
+  return new Date(ms)
     .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     .replace(',', '')
 }
@@ -49,7 +51,7 @@ function VersionThumb({ v, idx, svgText, cw, active, onClick }) {
   const src = svgText
     ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(applyColorway(svgText, cw))}`
     : null
-  const changes = v.pixel_changes ?? v.pixels_changed ?? v.changes ?? 0
+  const changes = v.changeCount ?? v.pixel_changes ?? v.pixels_changed ?? v.changes ?? 0
   const ts = v.timestamp ?? v.created_at ?? v.date ?? null
 
   return (
@@ -303,12 +305,14 @@ function App() {
             <div className="version-history">
               <div className="version-header">
                 <span className="version-label">Version History</span>
-                <button
-                  className="play-btn"
-                  onClick={() => setPlaying(p => !p)}
-                >
-                  {playing ? 'Stop' : 'Play'}
-                </button>
+                {versions.length > 1 && (
+                  <button
+                    className="play-btn"
+                    onClick={() => setPlaying(p => !p)}
+                  >
+                    {playing ? 'Stop' : 'Play'}
+                  </button>
+                )}
               </div>
               <div className="filmstrip">
                 {versions.map((v, i) => (
