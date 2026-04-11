@@ -205,6 +205,31 @@
   border-color: var(--fg);
 }
 
+.download-btn {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--fg);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  margin-top: 4px;
+}
+
+.download-btn:hover:not(:disabled) {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.download-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .traits {
   display: grid;
   grid-template-columns: 1fr 1fr;

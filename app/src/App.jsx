@@ -32,9 +32,10 @@ function App() {
   const [normie, setNormie]       = useState(null)
   const [loading, setLoading]     = useState(false)
   const [error, setError]         = useState(null)
-  const [colorway, setColorway]   = useState('original')
-  const [svgText, setSvgText]     = useState(null)
+  const [colorway, setColorway]     = useState('original')
+  const [svgText, setSvgText]       = useState(null)
   const [svgBlobUrl, setSvgBlobUrl] = useState(null)
+  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     if (!normie) {
@@ -61,6 +62,41 @@ function App() {
     setSvgBlobUrl(url)
     return () => URL.revokeObjectURL(url)
   }, [svgText, colorway])
+
+  async function downloadPng() {
+    if (!svgText || !normie) return
+    setDownloading(true)
+    try {
+      const cw = COLORWAYS.find(c => c.id === colorway)
+      const modified = applyColorway(svgText, cw)
+      const blob = new Blob([modified], { type: 'image/svg+xml' })
+      const url = URL.createObjectURL(blob)
+
+      await new Promise((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width  = 1200
+          canvas.height = 1200
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0, 1200, 1200)
+          URL.revokeObjectURL(url)
+          canvas.toBlob(pngBlob => {
+            const a = document.createElement('a')
+            a.href = URL.createObjectURL(pngBlob)
+            a.download = `normie-${normie.id}-${colorway}.png`
+            a.click()
+            URL.revokeObjectURL(a.href)
+            resolve()
+          }, 'image/png')
+        }
+        img.onerror = reject
+        img.src = url
+      })
+    } finally {
+      setDownloading(false)
+    }
+  }
 
   async function loadNormie() {
     const id = parseInt(inputId, 10)
@@ -149,6 +185,13 @@ function App() {
                 </button>
               ))}
             </div>
+            <button
+              className="download-btn"
+              onClick={downloadPng}
+              disabled={downloading || !svgBlobUrl}
+            >
+              {downloading ? 'Downloading…' : 'Download PNG'}
+            </button>
           </div>
           <div className="traits">
             {Array.isArray(normie.traits)
