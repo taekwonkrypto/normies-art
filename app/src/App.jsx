@@ -213,18 +213,12 @@ function App() {
     setPlaying(false)
 
     try {
-      const res = await fetch(`${API_BASE}/normie/${id}/traits`)
+      const res = await fetch(`${API_BASE}/normie/${id}/metadata`)
       if (!res.ok) throw new Error(`Token #${id} not found (${res.status})`)
       const data = await res.json()
-      console.log(`[normie #${id}] /traits raw:`, data)
+      console.log(`[normie #${id}] /metadata raw:`, data)
       const traits = data.attributes ?? data
-      console.log(`[normie #${id}] traits used for checks:`, traits)
-
-      // Also probe /metadata to see its shape
-      fetch(`${API_BASE}/normie/${id}/metadata`)
-        .then(r => r.json())
-        .then(meta => console.log(`[normie #${id}] /metadata raw:`, meta))
-        .catch(err => console.log(`[normie #${id}] /metadata unavailable:`, err.message))
+      console.log(`[normie #${id}] traits (${traits.length}):`, traits)
 
       setNormie({ id, traits })
     } catch (err) {
