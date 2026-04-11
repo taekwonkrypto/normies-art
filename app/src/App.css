@@ -230,6 +230,116 @@
   cursor: not-allowed;
 }
 
+.version-history {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.version-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.version-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  font-family: "Courier New", monospace;
+}
+
+.play-btn {
+  background: transparent;
+  border: 1px solid var(--fg);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.play-btn:hover {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.filmstrip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+
+.filmstrip::-webkit-scrollbar {
+  display: none;
+}
+
+.version-thumb {
+  flex-shrink: 0;
+  width: 80px;
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  color: var(--fg);
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  opacity: 0.5;
+  transition: opacity 0.15s, border-color 0.15s;
+}
+
+.version-thumb.active {
+  border-color: var(--fg);
+  opacity: 1;
+}
+
+.version-thumb:hover:not(.active) {
+  opacity: 0.75;
+}
+
+.thumb-img {
+  width: 72px;
+  height: 72px;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.thumb-placeholder {
+  width: 72px;
+  height: 72px;
+  background: rgba(var(--fg-rgb), 0.05);
+}
+
+.thumb-label {
+  font-size: 0.7rem;
+  font-family: "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.thumb-date {
+  font-size: 0.55rem;
+  font-family: "Courier New", monospace;
+  opacity: 0.7;
+  text-align: center;
+  line-height: 1.3;
+}
+
+.thumb-changes {
+  font-size: 0.55rem;
+  font-family: "Courier New", monospace;
+  opacity: 0.7;
+}
+
 .traits {
   display: grid;
   grid-template-columns: 1fr 1fr;

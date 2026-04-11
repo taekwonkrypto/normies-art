@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -27,21 +27,59 @@ function applyColorway(svgText, cw) {
   })
 }
 
+function checkCustomized(traits) {
+  if (Array.isArray(traits)) {
+    return traits.some(t => t.trait_type === 'Customized' && t.value === 'Yes')
+  }
+  return traits['Customized'] === 'Yes'
+}
+
+function formatDate(ts) {
+  if (!ts) return ''
+  return new Date(ts)
+    .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    .replace(',', '')
+}
+
+function VersionThumb({ v, idx, svgText, cw, active, onClick }) {
+  const src = svgText
+    ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(applyColorway(svgText, cw))}`
+    : null
+  const changes = v.pixel_changes ?? v.pixels_changed ?? v.changes ?? 0
+  const ts = v.timestamp ?? v.created_at ?? v.date ?? null
+
+  return (
+    <button className={`version-thumb${active ? ' active' : ''}`} onClick={onClick}>
+      {src
+        ? <img src={src} alt={`V${idx}`} className="thumb-img" />
+        : <div className="thumb-placeholder" />
+      }
+      <span className="thumb-label">V{idx}</span>
+      {ts && <span className="thumb-date">{formatDate(ts)}</span>}
+      <span className="thumb-changes">{changes >= 0 ? `+${changes}` : changes}px</span>
+    </button>
+  )
+}
+
 function App() {
-  const [inputId, setInputId]     = useState('')
-  const [normie, setNormie]       = useState(null)
-  const [loading, setLoading]     = useState(false)
-  const [error, setError]         = useState(null)
-  const [colorway, setColorway]     = useState('original')
-  const [svgText, setSvgText]       = useState(null)
-  const [svgBlobUrl, setSvgBlobUrl] = useState(null)
+  const [inputId, setInputId]         = useState('')
+  const [normie, setNormie]           = useState(null)
+  const [loading, setLoading]         = useState(false)
+  const [error, setError]             = useState(null)
+  const [colorway, setColorway]       = useState('original')
+  const [svgText, setSvgText]         = useState(null)
+  const [svgBlobUrl, setSvgBlobUrl]   = useState(null)
   const [downloading, setDownloading] = useState(false)
 
+  const [versions, setVersions]               = useState(null)
+  const [activeVersionIdx, setActiveVersionIdx] = useState(null)
+  const [versionSvgTexts, setVersionSvgTexts] = useState({})
+  const [playing, setPlaying]                 = useState(false)
+  const playIntervalRef                       = useRef(null)
+
+  // Fetch current normie SVG
   useEffect(() => {
-    if (!normie) {
-      setSvgText(null)
-      return
-    }
+    if (!normie) { setSvgText(null); return }
     const controller = new AbortController()
     fetch(`${API_BASE}/normie/${normie.id}/image.svg`, { signal: controller.signal })
       .then(r => r.text())
@@ -50,18 +88,66 @@ function App() {
     return () => controller.abort()
   }, [normie?.id])
 
+  // Compute blob URL from svgText + colorway
   useEffect(() => {
-    if (!svgText) {
-      setSvgBlobUrl(null)
-      return
-    }
+    if (!svgText) { setSvgBlobUrl(null); return }
     const cw = COLORWAYS.find(c => c.id === colorway)
-    const modified = applyColorway(svgText, cw)
-    const blob = new Blob([modified], { type: 'image/svg+xml' })
+    const blob = new Blob([applyColorway(svgText, cw)], { type: 'image/svg+xml' })
     const url = URL.createObjectURL(blob)
     setSvgBlobUrl(url)
     return () => URL.revokeObjectURL(url)
   }, [svgText, colorway])
+
+  // Fetch version list if normie is customized
+  useEffect(() => {
+    if (!normie) { setVersions(null); return }
+    if (!checkCustomized(normie.traits)) { setVersions(null); return }
+    const controller = new AbortController()
+    fetch(`${API_BASE}/history/normie/${normie.id}/versions`, { signal: controller.signal })
+      .then(r => r.json())
+      .then(data => {
+        setVersions(data)
+        setActiveVersionIdx(data.length - 1)
+      })
+      .catch(err => { if (err.name !== 'AbortError') setVersions([]) })
+    return () => controller.abort()
+  }, [normie?.id])
+
+  // Fetch SVG for each version
+  useEffect(() => {
+    if (!versions || !normie) return
+    const controllers = []
+    versions.forEach(v => {
+      const controller = new AbortController()
+      controllers.push(controller)
+      fetch(
+        `${API_BASE}/history/normie/${normie.id}/version/${v.version}/image.svg`,
+        { signal: controller.signal }
+      )
+        .then(r => r.text())
+        .then(text => setVersionSvgTexts(prev => ({ ...prev, [v.version]: text })))
+        .catch(() => {})
+    })
+    return () => controllers.forEach(c => c.abort())
+  }, [versions, normie?.id])
+
+  // Update main image when active version changes
+  useEffect(() => {
+    if (!versions || activeVersionIdx === null) return
+    const v = versions[activeVersionIdx]
+    if (!v) return
+    const text = versionSvgTexts[v.version]
+    if (text) setSvgText(text)
+  }, [activeVersionIdx, versionSvgTexts, versions])
+
+  // Playback interval
+  useEffect(() => {
+    if (!playing || !versions) return
+    playIntervalRef.current = setInterval(() => {
+      setActiveVersionIdx(prev => (prev + 1) % versions.length)
+    }, 1500)
+    return () => clearInterval(playIntervalRef.current)
+  }, [playing, versions])
 
   async function downloadPng() {
     if (!svgText || !normie) return
@@ -71,15 +157,13 @@ function App() {
       const modified = applyColorway(svgText, cw)
       const blob = new Blob([modified], { type: 'image/svg+xml' })
       const url = URL.createObjectURL(blob)
-
       await new Promise((resolve, reject) => {
         const img = new Image()
         img.onload = () => {
           const canvas = document.createElement('canvas')
           canvas.width  = 1200
           canvas.height = 1200
-          const ctx = canvas.getContext('2d')
-          ctx.drawImage(img, 0, 0, 1200, 1200)
+          canvas.getContext('2d').drawImage(img, 0, 0, 1200, 1200)
           URL.revokeObjectURL(url)
           canvas.toBlob(pngBlob => {
             const a = document.createElement('a')
@@ -105,17 +189,18 @@ function App() {
       setNormie(null)
       return
     }
-
     setLoading(true)
     setError(null)
     setNormie(null)
     setColorway('original')
+    setVersions(null)
+    setActiveVersionIdx(null)
+    setVersionSvgTexts({})
+    setPlaying(false)
 
     try {
       const res = await fetch(`${API_BASE}/normie/${id}/traits`)
-      if (!res.ok) {
-        throw new Error(`Token #${id} not found (${res.status})`)
-      }
+      if (!res.ok) throw new Error(`Token #${id} not found (${res.status})`)
       const data = await res.json()
       const traits = data.attributes ?? data
       setNormie({ id, traits })
@@ -129,6 +214,8 @@ function App() {
   function handleKeyDown(e) {
     if (e.key === 'Enter') loadNormie()
   }
+
+  const activeCw = COLORWAYS.find(c => c.id === colorway)
 
   return (
     <div className="app">
@@ -172,6 +259,7 @@ function App() {
               alt={`Normie #${normie.id}`}
             />
           )}
+
           <div className="effects-panel">
             <span className="effects-label">Effects</span>
             <div className="effects-row">
@@ -193,6 +281,34 @@ function App() {
               {downloading ? 'Downloading…' : 'Download PNG'}
             </button>
           </div>
+
+          {versions && versions.length > 0 && (
+            <div className="version-history">
+              <div className="version-header">
+                <span className="version-label">Version History</span>
+                <button
+                  className="play-btn"
+                  onClick={() => setPlaying(p => !p)}
+                >
+                  {playing ? 'Stop' : 'Play'}
+                </button>
+              </div>
+              <div className="filmstrip">
+                {versions.map((v, i) => (
+                  <VersionThumb
+                    key={v.version}
+                    v={v}
+                    idx={i}
+                    svgText={versionSvgTexts[v.version] ?? null}
+                    cw={activeCw}
+                    active={activeVersionIdx === i}
+                    onClick={() => { setPlaying(false); setActiveVersionIdx(i) }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="traits">
             {Array.isArray(normie.traits)
               ? normie.traits.map((trait, i) => (
