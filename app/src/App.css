@@ -154,6 +154,57 @@
   image-rendering: pixelated;
 }
 
+.effects-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.effects-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  font-family: "Courier New", monospace;
+}
+
+.effects-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.effects-row::-webkit-scrollbar {
+  display: none;
+}
+
+.effect-btn {
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.3);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.effect-btn:hover:not(.active) {
+  border-color: rgba(var(--fg-rgb), 0.6);
+}
+
+.effect-btn.active {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+
 .traits {
   display: grid;
   grid-template-columns: 1fr 1fr;

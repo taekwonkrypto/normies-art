@@ -8,6 +8,12 @@ function App() {
   const [normie, setNormie] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [effect, setEffect] = useState('original')
+
+  const EFFECTS = [
+    { id: 'original', label: 'Original', filter: 'none' },
+    { id: 'invert',   label: 'Invert',   filter: 'invert(1)' },
+  ]
 
   async function loadNormie() {
     const id = parseInt(inputId, 10)
@@ -79,7 +85,22 @@ function App() {
             className="normie-image"
             src={`${API_BASE}/normie/${normie.id}/image.svg`}
             alt={`Normie #${normie.id}`}
+            style={{ filter: EFFECTS.find(e => e.id === effect).filter }}
           />
+          <div className="effects-panel">
+            <span className="effects-label">Effects</span>
+            <div className="effects-row">
+              {EFFECTS.map(e => (
+                <button
+                  key={e.id}
+                  className={`effect-btn${effect === e.id ? ' active' : ''}`}
+                  onClick={() => setEffect(e.id)}
+                >
+                  {e.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="traits">
             {Array.isArray(normie.traits)
               ? normie.traits.map((trait, i) => (
