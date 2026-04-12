@@ -1,5 +1,61 @@
+/* ── Topbar ─────────────────────────────────────────────── */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg);
+  border-bottom: 1px solid rgba(var(--fg-rgb), 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 52px;
+  width: 100%;
+}
+
+.topbar-brand {
+  font-family: "Share Tech Mono", "Courier New", monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--fg);
+  margin: 0;
+}
+
+.topbar-nav {
+  display: flex;
+  gap: 24px;
+}
+
+.nav-link {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  cursor: pointer;
+  padding: 0 0 2px;
+  opacity: 0.45;
+  transition: opacity 0.15s;
+}
+
+.nav-link.active {
+  opacity: 1;
+  border-bottom: 2px solid var(--fg);
+}
+
+.nav-link:hover:not(.active) {
+  opacity: 0.75;
+}
+
+/* ── Explore page ───────────────────────────────────────── */
+
 .app {
-  min-height: 100vh;
+  min-height: calc(100vh - 52px);
   display: flex;
   flex-direction: column;
   align-items: center;

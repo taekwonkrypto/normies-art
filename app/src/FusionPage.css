@@ -1,0 +1,158 @@
+.fusion-page {
+  min-height: calc(100vh - 52px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 16px 80px;
+}
+
+.fusion-section {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 36px;
+}
+
+.section-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  font-family: "Courier New", monospace;
+}
+
+.fusion-type-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 2x2 candidates grid */
+.candidates-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.candidate-card {
+  position: relative;
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.2);
+  color: var(--fg);
+  cursor: pointer;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: border-color 0.15s;
+}
+
+.candidate-card:hover:not(.parent-a):not(.parent-b):not(.candidate-placeholder-card) {
+  border-color: rgba(var(--fg-rgb), 0.5);
+}
+
+.candidate-card.parent-a {
+  border: 2px solid var(--fg);
+}
+
+.candidate-card.parent-b {
+  border: 2px solid var(--fg);
+  opacity: 0.75;
+}
+
+.candidate-img {
+  width: 100%;
+  aspect-ratio: 1;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.candidate-id {
+  font-size: 0.75rem;
+  font-family: "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+
+.candidate-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: var(--fg);
+  color: var(--bg);
+  font-family: "Courier New", monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+}
+
+.candidate-placeholder-card {
+  cursor: default;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.candidate-placeholder {
+  width: 100%;
+  aspect-ratio: 1;
+  background: rgba(var(--fg-rgb), 0.05);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Blend slider row */
+.blend-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.blend-label {
+  font-size: 0.75rem;
+  font-family: "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.6;
+  min-width: 12px;
+}
+
+.blend-slider {
+  flex: 1;
+  accent-color: var(--fg);
+  cursor: pointer;
+}
+
+.blend-pct {
+  font-size: 0.7rem;
+  font-family: "Courier New", monospace;
+  opacity: 0.6;
+  min-width: 36px;
+  text-align: right;
+}
+
+/* Result canvas */
+.fusion-canvas {
+  width: 400px;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  image-rendering: pixelated;
+  display: block;
+}
+
+.fusion-start-over {
+  width: 100%;
+  margin-top: 4px;
+  opacity: 0.6;
+}
+
+.fusion-start-over:hover {
+  opacity: 1;
+}

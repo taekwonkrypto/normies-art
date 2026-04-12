@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import GIF from 'gif.js'
+import FusionPage from './FusionPage'
 import './App.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -69,6 +70,7 @@ function VersionThumb({ v, idx, svgText, cw, active, onClick }) {
 }
 
 function App() {
+  const [currentPage, setCurrentPage] = useState('explore')
   const [inputId, setInputId]         = useState('')
   const [normie, setNormie]           = useState(null)
   const [loading, setLoading]         = useState(false)
@@ -294,7 +296,27 @@ function App() {
   const activeCw = COLORWAYS.find(c => c.id === colorway)
 
   return (
-    <div className="app">
+    <>
+      <nav className="topbar">
+        <span className="topbar-brand">Normies.Art Tools</span>
+        <div className="topbar-nav">
+          <button
+            className={`nav-link${currentPage === 'explore' ? ' active' : ''}`}
+            onClick={() => setCurrentPage('explore')}
+          >
+            Explore
+          </button>
+          <button
+            className={`nav-link${currentPage === 'create' ? ' active' : ''}`}
+            onClick={() => setCurrentPage('create')}
+          >
+            Create
+          </button>
+        </div>
+      </nav>
+
+      {currentPage === 'create' ? <FusionPage /> : (
+      <div className="app">
       <header className="header">
         <h1 className="title">Normies Art Tools</h1>
         <p className="subtitle">Enter a Normie token ID to get started</p>
@@ -423,6 +445,8 @@ function App() {
         </div>
       )}
     </div>
+      )}
+    </>
   )
 }
 
