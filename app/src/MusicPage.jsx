@@ -60,7 +60,7 @@ function analyzeGrid(grid) {
 function getTraitMap(attributes) {
   const map = {}
   if (Array.isArray(attributes)) {
-    attributes.forEach(t => { map[(t.trait_type || '').toLowerCase()] = (t.value || '').toLowerCase() })
+    attributes.forEach(t => { map[String(t.trait_type ?? '').toLowerCase()] = String(t.value ?? '').toLowerCase() })
   }
   return map
 }
