@@ -117,3 +117,9 @@
   width: 100%;
   max-width: 480px;
 }
+
+.download-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}

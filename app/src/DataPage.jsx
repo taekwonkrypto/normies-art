@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import GIF from 'gif.js'
 import './DataPage.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -18,7 +19,7 @@ const COLORWAYS = [
   { id: 'ghost',     label: 'Ghost',     on: '#ffffff', off: '#111111' },
 ]
 
-const VIZ_NAMES   = ['CONSTELLATION', 'WAVEFORM', 'HEATMAP', 'FINGERPRINT', 'MIRROR']
+const VIZ_NAMES    = ['CONSTELLATION', 'WAVEFORM', 'HEATMAP', 'FINGERPRINT', 'MIRROR']
 const MIRROR_MODES = ['HORIZONTAL', 'VERTICAL', 'QUAD', 'KALEIDOSCOPE']
 
 const VIZ_DESCRIPTIONS = {
@@ -41,6 +42,15 @@ const MIRROR_DESCRIPTIONS = {
     'Both axes fold simultaneously. The top-left quadrant becomes the sole source, reflected horizontally, vertically, and diagonally to fill all four corners — fourfold symmetry from one corner of the grid.',
   KALEIDOSCOPE:
     "Each pixel's distance from center is decomposed into its principal and tangential components, then folded into a single 45° wedge. That octant tiles outward through eight reflections, collapsing the full grid into a radial mandala.",
+}
+
+// GIF record durations per visualization (ms)
+const GIF_DURATIONS = {
+  CONSTELLATION: 3000,
+  WAVEFORM:      3000,
+  HEATMAP:       4200,  // one full wave cycle at 1.5 rad/s
+  FINGERPRINT:   2600,  // one ripple cycle at 2.5 rad/s
+  MIRROR:        3200,
 }
 
 // ── Helpers ───────────────────────────────────────────────
@@ -70,93 +80,10 @@ function rowCounts(grid) {
   return grid.map(row => row.filter(Boolean).length)
 }
 
-// ── Visualization draw functions ──────────────────────────
-
-function drawWaveform(ctx, grid, cw) {
-  ctx.fillStyle = cw.off
-  ctx.fillRect(0, 0, SIZE, SIZE)
-
-  const counts = rowCounts(grid)
-  const maxC   = Math.max(...counts)
-  const minC   = Math.min(...counts)
-
-  // 5-point moving average
-  const smooth = counts.map((_, i) => {
-    let sum = 0, n = 0
-    for (let w = -2; w <= 2; w++) {
-      const idx = i + w
-      if (idx >= 0 && idx < GRID) { sum += counts[idx]; n++ }
-    }
-    return sum / n
-  })
-
-  const centerY = SIZE / 2
-  const MAX_H   = 178
-  const barW    = SIZE / GRID  // 10px
-
-  ctx.fillStyle = cw.on
-  for (let i = 0; i < GRID; i++) {
-    const h = Math.max(1, (smooth[i] / 40) * MAX_H)
-    const x = i * barW
-    ctx.fillRect(x,          centerY - h, barW - 1, h)
-    ctx.fillRect(x, centerY + 1,          barW - 1, h)
-  }
-
-  // Baseline + labels
-  ctx.globalAlpha = 0.35
-  ctx.fillRect(0, centerY, SIZE, 1)
-  ctx.globalAlpha = 0.55
-  ctx.font = '9px "Courier New", monospace'
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'top'
-  ctx.fillText(`max: ${maxC}`, 4, 4)
-  ctx.fillText(`min: ${minC}`, 4, SIZE - 14)
-  ctx.textAlign = 'right'
-  ctx.textBaseline = 'bottom'
-  ctx.fillText('0', SIZE - 4, centerY - 2)
-  ctx.globalAlpha = 1
-}
-
-function drawHeatmap(ctx, grid, cw) {
-  for (let r = 0; r < GRID; r++)
-    for (let c = 0; c < GRID; c++) {
-      let density = 0
-      for (let dr = -1; dr <= 1; dr++)
-        for (let dc = -1; dc <= 1; dc++) {
-          const nr = r+dr, nc = c+dc
-          if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID && grid[nr][nc]) density++
-        }
-      ctx.fillStyle = lerpColor(cw.off, cw.on, density / 9)
-      ctx.fillRect(c*CELL, r*CELL, CELL, CELL)
-    }
-}
-
-function drawFingerprint(ctx, grid, cw) {
-  ctx.fillStyle = cw.off
-  ctx.fillRect(0, 0, SIZE, SIZE)
-
-  const cx = SIZE / 2, cy = SIZE / 2
-  const counts = rowCounts(grid)
-
-  // Map each row's count to a radius, sort descending
-  const radii = counts.map(c => 5 + (c / 40) * 190)
-  const sorted = [...radii].sort((a, b) => b - a)
-
-  ctx.strokeStyle = cw.on
-  ctx.lineWidth = 1
-  ctx.globalAlpha = 0.65
-  for (const r of sorted) {
-    ctx.beginPath()
-    ctx.arc(cx, cy, r, 0, Math.PI * 2)
-    ctx.stroke()
-  }
-  ctx.globalAlpha = 1
-}
-
+// Used by MIRROR to paint onto an offscreen canvas before rotating
 function drawMirror(ctx, grid, cw, mode) {
   ctx.fillStyle = cw.off
   ctx.fillRect(0, 0, SIZE, SIZE)
-
   ctx.fillStyle = cw.on
   for (let r = 0; r < GRID; r++)
     for (let c = 0; c < GRID; c++) {
@@ -168,13 +95,9 @@ function drawMirror(ctx, grid, cw, mode) {
       } else if (mode === 'QUAD') {
         on = grid[r < 20 ? r : 39 - r][c < 20 ? c : 39 - c]
       } else {
-        // KALEIDOSCOPE — fold to first octant (|dr| >= |dc|)
-        const absDr = Math.abs(r - 19.5)
-        const absDc = Math.abs(c - 19.5)
-        const foldR = Math.max(absDr, absDc)
-        const foldC = Math.min(absDr, absDc)
-        const srcR  = Math.min(39, Math.floor(19.5 + foldR))
-        const srcC  = Math.min(39, Math.floor(19.5 + foldC))
+        const absDr = Math.abs(r - 19.5), absDc = Math.abs(c - 19.5)
+        const srcR  = Math.min(39, Math.floor(19.5 + Math.max(absDr, absDc)))
+        const srcC  = Math.min(39, Math.floor(19.5 + Math.min(absDr, absDc)))
         on = grid[srcR][srcC]
       }
       if (on) ctx.fillRect(c*CELL, r*CELL, CELL, CELL)
@@ -184,14 +107,15 @@ function drawMirror(ctx, grid, cw, mode) {
 // ── Component ─────────────────────────────────────────────
 
 export default function DataPage() {
-  const [inputId,   setInputId]   = useState('')
-  const [normieId,  setNormieId]  = useState(null)
-  const [grid,      setGrid]      = useState(null)
-  const [loading,   setLoading]   = useState(false)
-  const [error,     setError]     = useState(null)
-  const [viz,       setViz]       = useState('CONSTELLATION')
-  const [mirrorMode,setMirrorMode]= useState('HORIZONTAL')
-  const [colorway,  setColorway]  = useState('original')
+  const [inputId,    setInputId]    = useState('')
+  const [normieId,   setNormieId]   = useState(null)
+  const [grid,       setGrid]       = useState(null)
+  const [loading,    setLoading]    = useState(false)
+  const [error,      setError]      = useState(null)
+  const [viz,        setViz]        = useState('CONSTELLATION')
+  const [mirrorMode, setMirrorMode] = useState('HORIZONTAL')
+  const [colorway,   setColorway]   = useState('original')
+  const [gifState,   setGifState]   = useState(null) // null | 'recording' | 'encoding'
 
   const canvasRef = useRef(null)
 
@@ -244,7 +168,58 @@ export default function DataPage() {
     }, 'image/png')
   }
 
-  // ── Draw effect ──────────────────────────────────────────
+  async function downloadGif() {
+    const canvas = canvasRef.current
+    if (!canvas || normieId === null || gifState !== null) return
+
+    const FPS        = 15
+    const FRAME_MS   = Math.round(1000 / FPS)
+    const duration   = GIF_DURATIONS[viz] ?? 3000
+    const totalFrames = Math.max(2, Math.ceil(duration / FRAME_MS))
+    const OUT        = 600
+    const slug       = viz === 'MIRROR' ? `mirror-${mirrorMode.toLowerCase()}` : viz.toLowerCase()
+
+    setGifState('recording')
+    try {
+      const gif = new GIF({
+        workers: 2, quality: 10,
+        width: OUT, height: OUT,
+        workerScript: '/gif.worker.js',
+        repeat: 0,
+      })
+      await new Promise(resolve => {
+        let count = 0
+        const interval = setInterval(() => {
+          const frame = document.createElement('canvas')
+          frame.width = OUT; frame.height = OUT
+          const fCtx = frame.getContext('2d')
+          fCtx.imageSmoothingEnabled = false
+          fCtx.drawImage(canvas, 0, 0, OUT, OUT)
+          gif.addFrame(frame, { delay: FRAME_MS, copy: true })
+          if (++count >= totalFrames) { clearInterval(interval); resolve() }
+        }, FRAME_MS)
+      })
+      setGifState('encoding')
+      await new Promise((resolve, reject) => {
+        gif.on('finished', blob => {
+          const a = document.createElement('a')
+          a.href = URL.createObjectURL(blob)
+          a.download = `normie-${normieId}-${slug}.gif`
+          a.click()
+          URL.revokeObjectURL(a.href)
+          resolve()
+        })
+        gif.on('abort', () => reject(new Error('GIF aborted')))
+        gif.render()
+      })
+    } catch (err) {
+      console.error('GIF export failed:', err)
+    } finally {
+      setGifState(null)
+    }
+  }
+
+  // ── Animation loop ────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -261,17 +236,15 @@ export default function DataPage() {
 
     // ── CONSTELLATION ──────────────────────────────────────
     if (viz === 'CONSTELLATION') {
-      // Precompute dots and near pairs once
       const dots = []
       for (let r = 0; r < GRID; r++)
         for (let c = 0; c < GRID; c++)
-          if (grid[r][c]) dots.push({ x: c*CELL + CELL/2, y: r*CELL + CELL/2 })
+          if (grid[r][c]) dots.push({ x: c*CELL+CELL/2, y: r*CELL+CELL/2 })
 
       const pairs = []
       for (let i = 0; i < dots.length; i++)
         for (let j = i+1; j < dots.length; j++) {
-          const dx   = dots[i].x - dots[j].x
-          const dy   = dots[i].y - dots[j].y
+          const dx = dots[i].x - dots[j].x, dy = dots[i].y - dots[j].y
           const dist = Math.sqrt(dx*dx + dy*dy)
           if (dist < 30)
             pairs.push({ ax: dots[i].x, ay: dots[i].y, bx: dots[j].x, by: dots[j].y, alpha: (1 - dist/30) * 0.65 })
@@ -280,46 +253,171 @@ export default function DataPage() {
       function frameConst(now) {
         ctx.fillStyle = cw.off
         ctx.fillRect(0, 0, SIZE, SIZE)
-
         ctx.strokeStyle = cw.on
-        ctx.lineWidth   = 1
+        ctx.lineWidth = 1
         for (const { ax, ay, bx, by, alpha } of pairs) {
           ctx.globalAlpha = alpha
           ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke()
         }
-
         const pulse = 2 + Math.sin(now / 2000 * Math.PI * 2) * 0.8
         ctx.globalAlpha = 1
-        ctx.fillStyle   = cw.on
+        ctx.fillStyle = cw.on
         for (const d of dots) {
           ctx.beginPath(); ctx.arc(d.x, d.y, pulse, 0, Math.PI * 2); ctx.fill()
         }
-
         rafId = requestAnimationFrame(frameConst)
       }
       rafId = requestAnimationFrame(frameConst)
 
-    // ── WAVEFORM ──────────────────────────────────────────
+    // ── WAVEFORM — scrolls right to left ───────────────────
     } else if (viz === 'WAVEFORM') {
-      drawWaveform(ctx, grid, cw)
+      const counts = rowCounts(grid)
+      const maxC   = Math.max(...counts)
+      const minC   = Math.min(...counts)
 
-    // ── HEATMAP ───────────────────────────────────────────
+      // Smooth once; data doesn't change
+      const smooth = counts.map((_, i) => {
+        let sum = 0, n = 0
+        for (let w = -2; w <= 2; w++) {
+          const idx = i + w
+          if (idx >= 0 && idx < GRID) { sum += counts[idx]; n++ }
+        }
+        return sum / n
+      })
+
+      const SCROLL_SPEED = 8  // grid cells per second
+      const centerY = SIZE / 2
+      const MAX_H   = 178
+      const barW    = SIZE / GRID
+
+      function frameWave(now) {
+        ctx.fillStyle = cw.off
+        ctx.fillRect(0, 0, SIZE, SIZE)
+
+        const offset = (now / 1000 * SCROLL_SPEED) % GRID
+        const frac   = offset % 1
+
+        ctx.fillStyle = cw.on
+        for (let i = 0; i <= GRID; i++) {
+          const srcIdx = Math.floor(i + offset) % GRID
+          const x      = (i - frac) * barW
+          if (x > -barW && x < SIZE) {
+            const h = Math.max(1, (smooth[srcIdx] / 40) * MAX_H)
+            ctx.fillRect(x,          centerY - h, barW - 1, h)
+            ctx.fillRect(x, centerY + 1,          barW - 1, h)
+          }
+        }
+
+        ctx.globalAlpha = 0.35
+        ctx.fillRect(0, centerY, SIZE, 1)
+        ctx.globalAlpha = 0.55
+        ctx.font = '9px "Courier New", monospace'
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top'
+        ctx.fillText(`max: ${maxC}`, 4, 4)
+        ctx.fillText(`min: ${minC}`, 4, SIZE - 14)
+        ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'
+        ctx.fillText('0', SIZE - 4, centerY - 2)
+        ctx.globalAlpha = 1
+
+        rafId = requestAnimationFrame(frameWave)
+      }
+      rafId = requestAnimationFrame(frameWave)
+
+    // ── HEATMAP — diagonal shimmer wave ────────────────────
     } else if (viz === 'HEATMAP') {
-      drawHeatmap(ctx, grid, cw)
+      // Precompute static density per cell
+      const densities = Array.from({ length: GRID }, (_, r) =>
+        Array.from({ length: GRID }, (_, c) => {
+          let d = 0
+          for (let dr = -1; dr <= 1; dr++)
+            for (let dc = -1; dc <= 1; dc++) {
+              const nr = r+dr, nc = c+dc
+              if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID && grid[nr][nc]) d++
+            }
+          return d
+        })
+      )
 
-    // ── FINGERPRINT ───────────────────────────────────────
+      function frameHeat(now) {
+        const t = now / 1000
+        for (let r = 0; r < GRID; r++)
+          for (let c = 0; c < GRID; c++) {
+            const base  = densities[r][c]
+            const wave  = Math.sin(t * 1.5 + (r + c) * 0.25) * 1.8
+            const animD = Math.max(0, Math.min(9, base + wave))
+            ctx.fillStyle = lerpColor(cw.off, cw.on, animD / 9)
+            ctx.fillRect(c*CELL, r*CELL, CELL, CELL)
+          }
+        rafId = requestAnimationFrame(frameHeat)
+      }
+      rafId = requestAnimationFrame(frameHeat)
+
+    // ── FINGERPRINT — outward ripple waves ─────────────────
     } else if (viz === 'FINGERPRINT') {
-      drawFingerprint(ctx, grid, cw)
+      const counts    = rowCounts(grid)
+      const baseRadii = counts.map(c => 5 + (c / 40) * 190)
+      // Sort once; animation modifies radii dynamically
+      const sorted = baseRadii
+        .map((r, i) => ({ base: r, i }))
+        .sort((a, b) => b.base - a.base)
 
-    // ── MIRROR ────────────────────────────────────────────
+      const cx = SIZE / 2, cy = SIZE / 2
+
+      function frameFingerprint(now) {
+        ctx.fillStyle = cw.off
+        ctx.fillRect(0, 0, SIZE, SIZE)
+        ctx.strokeStyle = cw.on
+        ctx.lineWidth   = 1
+        ctx.globalAlpha = 0.65
+
+        const t = now / 1000
+        for (const { base } of sorted) {
+          // Phase depends on base radius → wave propagates outward from center
+          const animR = base + Math.sin(t * 2.5 - base * 0.06) * 6
+          if (animR > 0) {
+            ctx.beginPath()
+            ctx.arc(cx, cy, animR, 0, Math.PI * 2)
+            ctx.stroke()
+          }
+        }
+        ctx.globalAlpha = 1
+        rafId = requestAnimationFrame(frameFingerprint)
+      }
+      rafId = requestAnimationFrame(frameFingerprint)
+
+    // ── MIRROR — slow rotation ─────────────────────────────
     } else if (viz === 'MIRROR') {
-      drawMirror(ctx, grid, cw, mirrorMode)
+      // Paint mirror image once to an offscreen canvas, then rotate it each frame
+      const offscreen    = document.createElement('canvas')
+      offscreen.width    = SIZE
+      offscreen.height   = SIZE
+      drawMirror(offscreen.getContext('2d'), grid, cw, mirrorMode)
+
+      // Kaleidoscope has 8-fold symmetry so even a modest speed feels active
+      const rotSpeed = mirrorMode === 'KALEIDOSCOPE' ? 0.20 : 0.10
+
+      function frameMirror(now) {
+        const angle = (now / 1000) * rotSpeed
+
+        ctx.fillStyle = cw.off
+        ctx.fillRect(0, 0, SIZE, SIZE)
+        ctx.save()
+        ctx.translate(SIZE / 2, SIZE / 2)
+        ctx.rotate(angle)
+        ctx.drawImage(offscreen, -SIZE / 2, -SIZE / 2)
+        ctx.restore()
+
+        rafId = requestAnimationFrame(frameMirror)
+      }
+      rafId = requestAnimationFrame(frameMirror)
     }
 
     return () => {
       if (rafId !== null) cancelAnimationFrame(rafId)
     }
   }, [grid, viz, colorway, mirrorMode])
+
+  const busy = gifState !== null
 
   return (
     <div className="data-page">
@@ -405,13 +503,14 @@ export default function DataPage() {
               </button>
             ))}
           </div>
-          <button
-            className="download-btn"
-            onClick={downloadPng}
-            disabled={normieId === null}
-          >
-            Download PNG
-          </button>
+          <div className="download-row">
+            <button className="download-btn" onClick={downloadPng} disabled={normieId === null || busy}>
+              Download PNG
+            </button>
+            <button className="download-btn" onClick={downloadGif} disabled={normieId === null || busy}>
+              {gifState === 'recording' ? 'Recording…' : gifState === 'encoding' ? 'Encoding…' : 'Download GIF'}
+            </button>
+          </div>
         </div>
       )}
     </div>
