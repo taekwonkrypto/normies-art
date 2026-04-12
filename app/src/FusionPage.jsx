@@ -56,21 +56,37 @@ function randomIds(count) {
   return [...ids]
 }
 
-export default function FusionPage() {
-  const [collectionSize, setCollectionSize] = useState(null)
-  const [candidateIds,   setCandidateIds]   = useState(() => randomIds(8))
-  const [failedIds,      setFailedIds]      = useState(new Set())
-  const [parentA,        setParentA]        = useState(null)
-  const [parentB,        setParentB]        = useState(null)
-  const [loadingPixels,  setLoadingPixels]  = useState({})
-  const [method,         setMethod]         = useState(null)
-  const [blendValue,     setBlendValue]     = useState(50)
-  const [fusedPixels,    setFusedPixels]    = useState(null)
-  const [colorway,       setColorway]       = useState('original')
-  const [downloading,    setDownloading]    = useState(false)
+function parseId(val) {
+  const n = parseInt(val, 10)
+  return !isNaN(n) && n >= 0 && n <= 9999 ? n : null
+}
 
-  const canvasRef   = useRef(null)
-  const pixAborts   = useRef({})
+export default function FusionPage() {
+  const [mode,           setMode]          = useState('random') // 'random' | 'ids'
+  const [collectionSize, setCollectionSize] = useState(null)
+
+  // Random mode
+  const [candidateIds,  setCandidateIds]  = useState(() => randomIds(8))
+  const [failedIds,     setFailedIds]     = useState(new Set())
+  const [loadingPixels, setLoadingPixels] = useState({})
+
+  // IDs mode
+  const [inputA, setInputA] = useState('')
+  const [inputB, setInputB] = useState('')
+  const [computing, setComputing] = useState(false)
+  const [idError,   setIdError]   = useState(null)
+
+  // Shared
+  const [parentA,     setParentA]     = useState(null)
+  const [parentB,     setParentB]     = useState(null)
+  const [method,      setMethod]      = useState(null)
+  const [blendValue,  setBlendValue]  = useState(50)
+  const [fusedPixels, setFusedPixels] = useState(null)
+  const [colorway,    setColorway]    = useState('original')
+  const [downloading, setDownloading] = useState(false)
+
+  const canvasRef = useRef(null)
+  const pixAborts = useRef({})
 
   // Fetch collection size once on mount
   useEffect(() => {
@@ -90,20 +106,36 @@ export default function FusionPage() {
     renderToCanvas(canvasRef.current, fusedPixels, cw)
   }, [fusedPixels, colorway])
 
-  function shuffle() {
-    // Cancel any in-flight pixel fetches
-    Object.values(pixAborts.current).forEach(c => c.abort())
-    pixAborts.current = {}
-    setCandidateIds(randomIds(8))
-    setFailedIds(new Set())
+  function resetFusion() {
     setParentA(null)
     setParentB(null)
     setMethod(null)
     setFusedPixels(null)
+    setIdError(null)
+  }
+
+  function switchMode(m) {
+    Object.values(pixAborts.current).forEach(c => c.abort())
+    pixAborts.current = {}
+    setMode(m)
+    setInputA('')
+    setInputB('')
+    resetFusion()
+    setLoadingPixels({})
+  }
+
+  // ── Random mode ────────────────────────────────────────
+
+  function shuffle() {
+    Object.values(pixAborts.current).forEach(c => c.abort())
+    pixAborts.current = {}
+    setCandidateIds(randomIds(8))
+    setFailedIds(new Set())
+    setLoadingPixels({})
+    resetFusion()
   }
 
   async function selectCandidate(id) {
-    // Toggle off if already selected
     if (parentA?.id === id) {
       setParentA(parentB)
       setParentB(null)
@@ -117,10 +149,8 @@ export default function FusionPage() {
       setFusedPixels(null)
       return
     }
-    // Both already chosen — no-op until user deselects one
     if (parentA && parentB) return
 
-    // Fetch pixels for this normie
     const controller = new AbortController()
     pixAborts.current[id] = controller
     setLoadingPixels(prev => ({ ...prev, [id]: true }))
@@ -132,7 +162,6 @@ export default function FusionPage() {
       if (raw.length < 1600) { setFailedIds(prev => new Set([...prev, id])); return }
 
       const candidate = { id, pixels: raw.slice(0, 1600) }
-      // Re-check state in setter to avoid stale closure issues
       setParentA(prevA => {
         if (!prevA) return candidate
         setParentB(prevB => prevB ?? candidate)
@@ -146,17 +175,68 @@ export default function FusionPage() {
     }
   }
 
+  // ── IDs mode ──────────────────────────────────────────
+
+  const idA = parseId(inputA)
+  const idB = parseId(inputB)
+  const bothIdsValid = idA !== null && idB !== null && idA !== idB
+
+  // Fetch pixels for both IDs, then fuse
+  async function fetchAndFuse(m, blend) {
+    setComputing(true)
+    setIdError(null)
+    try {
+      const [resA, resB] = await Promise.all([
+        fetch(`${API_BASE}/normie/${idA}/pixels`),
+        fetch(`${API_BASE}/normie/${idB}/pixels`),
+      ])
+      if (!resA.ok) throw new Error(`Normie #${idA} not found`)
+      if (!resB.ok) throw new Error(`Normie #${idB} not found`)
+      const [rawA, rawB] = await Promise.all([resA.text(), resB.text()])
+      const pixA = rawA.trim().slice(0, 1600)
+      const pixB = rawB.trim().slice(0, 1600)
+      if (pixA.length < 1600) throw new Error(`Pixel data unavailable for #${idA}`)
+      if (pixB.length < 1600) throw new Error(`Pixel data unavailable for #${idB}`)
+      const pa = { id: idA, pixels: pixA }
+      const pb = { id: idB, pixels: pixB }
+      setParentA(pa)
+      setParentB(pb)
+      setFusedPixels(fusePixels(pixA, pixB, m, blend))
+    } catch (err) {
+      setIdError(err.message)
+    } finally {
+      setComputing(false)
+    }
+  }
+
+  // ── Shared fusion controls ────────────────────────────
+
   function handleMethodSelect(m) {
     setMethod(m)
-    setFusedPixels(fusePixels(parentA.pixels, parentB.pixels, m, blendValue))
+    if (mode === 'random') {
+      // Pixels already available
+      setFusedPixels(fusePixels(parentA.pixels, parentB.pixels, m, blendValue))
+    } else {
+      // IDs mode: fetch pixels then fuse (or re-fuse if already have them)
+      if (parentA && parentB) {
+        setFusedPixels(fusePixels(parentA.pixels, parentB.pixels, m, blendValue))
+      } else {
+        fetchAndFuse(m, blendValue)
+      }
+    }
   }
 
   function handleBlendChange(val) {
     setBlendValue(val)
-    if (method === 'BLEND') {
+    if (method === 'BLEND' && parentA && parentB) {
       setFusedPixels(fusePixels(parentA.pixels, parentB.pixels, 'BLEND', val))
     }
   }
+
+  // Show method buttons once parents are ready
+  const readyForMethod = mode === 'random'
+    ? !!(parentA && parentB)
+    : bothIdsValid
 
   async function downloadPng() {
     if (!fusedPixels) return
@@ -194,16 +274,13 @@ export default function FusionPage() {
   function startOver() {
     Object.values(pixAborts.current).forEach(c => c.abort())
     pixAborts.current = {}
-    setParentA(null)
-    setParentB(null)
-    setMethod(null)
-    setFusedPixels(null)
+    setInputA('')
+    setInputB('')
     setColorway('original')
-    shuffle()
+    setComputing(false)
+    resetFusion()
+    if (mode === 'random') shuffle()
   }
-
-  const activeCw    = COLORWAYS.find(c => c.id === colorway)
-  const bothChosen  = parentA && parentB
 
   return (
     <div className="fusion-page">
@@ -212,96 +289,187 @@ export default function FusionPage() {
         <p className="subtitle">
           {collectionSize != null
             ? `${collectionSize.toLocaleString()} normies in collection`
-            : 'Select two normies to fuse'}
+            : 'Fuse two normies into one'}
         </p>
       </header>
 
-      {/* Candidate grid */}
+      {/* Mode toggle */}
       <div className="fusion-section">
-        <div className="fusion-row-header">
-          <span className="section-label">
-            {!parentA
-              ? 'Select parent A'
-              : !parentB
-              ? 'Select parent B'
-              : 'Two selected — choose a method below'}
-          </span>
-          <button className="nav-link" onClick={shuffle}>Shuffle</button>
-        </div>
-
-        <div className="candidates-grid">
-          {candidateIds.map(id => {
-            const isA      = parentA?.id === id
-            const isB      = parentB?.id === id
-            const failed   = failedIds.has(id)
-            const fetching = !!loadingPixels[id]
-            return (
-              <button
-                key={id}
-                className={[
-                  'candidate-card',
-                  isA      ? 'parent-a'       : '',
-                  isB      ? 'parent-b'       : '',
-                  failed   ? 'card-failed'    : '',
-                  fetching ? 'card-fetching'  : '',
-                ].filter(Boolean).join(' ')}
-                onClick={() => !failed && selectCandidate(id)}
-                disabled={fetching || (!isA && !isB && bothChosen)}
-              >
-                <img
-                  src={`${API_BASE}/normie/${id}/image.svg`}
-                  alt={`Normie #${id}`}
-                  className="candidate-img"
-                  onError={() => setFailedIds(prev => new Set([...prev, id]))}
-                />
-                <span className="candidate-id">#{id}</span>
-                {isA && <span className="candidate-badge badge-a">A</span>}
-                {isB && <span className="candidate-badge badge-b">B</span>}
-                {fetching && (
-                  <div className="candidate-spinner">
-                    <div className="spinner" />
-                  </div>
-                )}
-                {failed && <span className="candidate-burned">burned</span>}
-              </button>
-            )
-          })}
+        <div className="mode-toggle">
+          <button
+            className={`effect-btn${mode === 'random' ? ' active' : ''}`}
+            onClick={() => switchMode('random')}
+          >
+            Random
+          </button>
+          <button
+            className={`effect-btn${mode === 'ids' ? ' active' : ''}`}
+            onClick={() => switchMode('ids')}
+          >
+            Enter IDs
+          </button>
         </div>
       </div>
 
-      {/* Fusion method — appears once both parents are chosen */}
-      {bothChosen && (
+      {/* ── Random mode ─────────────────────────────── */}
+      {mode === 'random' && (
+        <div className="fusion-section">
+          <div className="fusion-row-header">
+            <span className="section-label">
+              {!parentA
+                ? 'Select parent A'
+                : !parentB
+                ? 'Select parent B'
+                : 'Two selected — choose a method below'}
+            </span>
+            <button className="nav-link" onClick={shuffle}>Shuffle</button>
+          </div>
+          <div className="candidates-grid">
+            {candidateIds.map(id => {
+              const isA      = parentA?.id === id
+              const isB      = parentB?.id === id
+              const failed   = failedIds.has(id)
+              const fetching = !!loadingPixels[id]
+              return (
+                <button
+                  key={id}
+                  className={[
+                    'candidate-card',
+                    isA      ? 'parent-a'      : '',
+                    isB      ? 'parent-b'      : '',
+                    failed   ? 'card-failed'   : '',
+                    fetching ? 'card-fetching' : '',
+                  ].filter(Boolean).join(' ')}
+                  onClick={() => !failed && selectCandidate(id)}
+                  disabled={fetching || (!isA && !isB && !!(parentA && parentB))}
+                >
+                  <img
+                    src={`${API_BASE}/normie/${id}/image.svg`}
+                    alt={`Normie #${id}`}
+                    className="candidate-img"
+                    onError={() => setFailedIds(prev => new Set([...prev, id]))}
+                  />
+                  <span className="candidate-id">#{id}</span>
+                  {isA && <span className="candidate-badge">A</span>}
+                  {isB && <span className="candidate-badge">B</span>}
+                  {fetching && <div className="candidate-spinner"><div className="spinner" /></div>}
+                  {failed   && <span className="candidate-burned">burned</span>}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── IDs mode ────────────────────────────────── */}
+      {mode === 'ids' && (
+        <div className="fusion-section">
+          <span className="section-label">Enter two token IDs (0 – 9999)</span>
+          <div className="id-inputs-row">
+            {/* Parent A */}
+            <div className="id-input-block">
+              <span className="id-input-label">Parent A</span>
+              <input
+                className="token-input id-input"
+                type="number"
+                min="0"
+                max="9999"
+                placeholder="0 – 9999"
+                value={inputA}
+                onChange={e => { setInputA(e.target.value); resetFusion() }}
+              />
+              {idA !== null && (
+                <div className="id-preview">
+                  <img
+                    src={`${API_BASE}/normie/${idA}/image.svg`}
+                    alt={`Normie #${idA}`}
+                    className="id-preview-img"
+                    onError={() => setIdError(`Normie #${idA} not found`)}
+                  />
+                  <span className="id-preview-label">#{idA}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="id-inputs-divider">×</div>
+
+            {/* Parent B */}
+            <div className="id-input-block">
+              <span className="id-input-label">Parent B</span>
+              <input
+                className="token-input id-input"
+                type="number"
+                min="0"
+                max="9999"
+                placeholder="0 – 9999"
+                value={inputB}
+                onChange={e => { setInputB(e.target.value); resetFusion() }}
+              />
+              {idB !== null && (
+                <div className="id-preview">
+                  <img
+                    src={`${API_BASE}/normie/${idB}/image.svg`}
+                    alt={`Normie #${idB}`}
+                    className="id-preview-img"
+                    onError={() => setIdError(`Normie #${idB} not found`)}
+                  />
+                  <span className="id-preview-label">#{idB}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {idA !== null && idB !== null && idA === idB && (
+            <p className="fusion-error">IDs must be different</p>
+          )}
+          {idError && <p className="fusion-error">{idError}</p>}
+        </div>
+      )}
+
+      {/* ── Fusion method (shared) ──────────────────── */}
+      {readyForMethod && (
         <div className="fusion-section">
           <span className="section-label">
-            Fusion method — #{parentA.id} × #{parentB.id}
+            {mode === 'random'
+              ? `Fusion method — #${parentA.id} × #${parentB.id}`
+              : `Fusion method — #${idA} × #${idB}`}
           </span>
-          <div className="effects-row">
-            {METHODS.map(m => (
-              <button
-                key={m}
-                className={`effect-btn${method === m ? ' active' : ''}`}
-                onClick={() => handleMethodSelect(m)}
-              >
-                {m}
-              </button>
-            ))}
-          </div>
-          {method === 'BLEND' && (
-            <div className="blend-control">
-              <span className="blend-label">A</span>
-              <input
-                type="range" min="0" max="100" value={blendValue}
-                onChange={e => handleBlendChange(Number(e.target.value))}
-                className="blend-slider"
-              />
-              <span className="blend-label">B</span>
-              <span className="blend-pct">{blendValue}%</span>
+          {computing ? (
+            <div className="loading">
+              <div className="spinner" />
+              <span>Fetching pixel data…</span>
             </div>
+          ) : (
+            <>
+              <div className="effects-row">
+                {METHODS.map(m => (
+                  <button
+                    key={m}
+                    className={`effect-btn${method === m ? ' active' : ''}`}
+                    onClick={() => handleMethodSelect(m)}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+              {method === 'BLEND' && (
+                <div className="blend-control">
+                  <span className="blend-label">A</span>
+                  <input
+                    type="range" min="0" max="100" value={blendValue}
+                    onChange={e => handleBlendChange(Number(e.target.value))}
+                    className="blend-slider"
+                  />
+                  <span className="blend-label">B</span>
+                  <span className="blend-pct">{blendValue}%</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
 
-      {/* Result */}
+      {/* ── Result (shared) ────────────────────────── */}
       {fusedPixels && (
         <div className="fusion-section">
           <span className="section-label">Result [{method}]</span>

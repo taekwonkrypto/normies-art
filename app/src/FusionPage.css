@@ -124,6 +124,81 @@
   opacity: 0.5;
 }
 
+/* Mode toggle */
+.mode-toggle {
+  display: flex;
+  gap: 8px;
+}
+
+/* IDs mode */
+.id-inputs-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.id-input-block {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.id-input-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  font-family: "Courier New", monospace;
+}
+
+.id-input {
+  width: 100%;
+}
+
+.id-inputs-divider {
+  font-size: 1.2rem;
+  font-family: "Courier New", monospace;
+  opacity: 0.4;
+  padding-top: 36px;
+  flex-shrink: 0;
+}
+
+.id-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  padding: 6px;
+}
+
+.id-preview-img {
+  width: 100%;
+  aspect-ratio: 1;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.id-preview-label {
+  font-size: 0.7rem;
+  font-family: "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+}
+
+.fusion-error {
+  font-size: 0.75rem;
+  font-family: "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
+  border: 1px solid rgba(var(--fg-rgb), 0.2);
+  padding: 0.5rem 0.75rem;
+  margin: 0;
+}
+
 /* Blend slider row */
 .blend-control {
   display: flex;
