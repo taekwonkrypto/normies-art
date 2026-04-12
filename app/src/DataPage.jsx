@@ -18,7 +18,7 @@ const COLORWAYS = [
   { id: 'ghost',     label: 'Ghost',     on: '#ffffff', off: '#111111' },
 ]
 
-const VIZ_NAMES   = ['CONSTELLATION', 'ASCII', 'WAVEFORM', 'HEATMAP', 'FINGERPRINT', 'MIRROR']
+const VIZ_NAMES   = ['CONSTELLATION', 'WAVEFORM', 'HEATMAP', 'FINGERPRINT', 'MIRROR']
 const MIRROR_MODES = ['HORIZONTAL', 'VERTICAL', 'QUAD', 'KALEIDOSCOPE']
 
 // ── Helpers ───────────────────────────────────────────────
@@ -49,50 +49,6 @@ function rowCounts(grid) {
 }
 
 // ── Visualization draw functions ──────────────────────────
-
-function drawAscii(ctx, grid, cw) {
-  ctx.fillStyle = cw.off
-  ctx.fillRect(0, 0, SIZE, SIZE)
-
-  const BLOCKS = 8
-  const BLOCK_CELLS = 5  // 5x5 grid cells per block
-  const BLOCK_PX    = SIZE / BLOCKS  // 50px
-
-  function countToChar(n) {
-    if (n === 0)   return ' '
-    if (n <= 3)    return '.'
-    if (n <= 6)    return ':'
-    if (n <= 9)    return '+'
-    if (n <= 13)   return 'x'
-    if (n <= 17)   return 'X'
-    if (n <= 21)   return '#'
-    return '█'
-  }
-
-  ctx.font = `38px "Courier New", monospace`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillStyle = cw.on
-
-  const lines = []
-  for (let by = 0; by < BLOCKS; by++) {
-    let line = ''
-    for (let bx = 0; bx < BLOCKS; bx++) {
-      let count = 0
-      for (let dy = 0; dy < BLOCK_CELLS; dy++)
-        for (let dx = 0; dx < BLOCK_CELLS; dx++) {
-          const r = by*BLOCK_CELLS+dy, c = bx*BLOCK_CELLS+dx
-          if (r < GRID && c < GRID && grid[r][c]) count++
-        }
-      const ch = countToChar(count)
-      line += ch
-      if (ch !== ' ')
-        ctx.fillText(ch, bx*BLOCK_PX + BLOCK_PX/2, by*BLOCK_PX + BLOCK_PX/2)
-    }
-    lines.push(line)
-  }
-  return lines.join('\n')
-}
 
 function drawWaveform(ctx, grid, cw) {
   ctx.fillStyle = cw.off
@@ -214,7 +170,6 @@ export default function DataPage() {
   const [viz,       setViz]       = useState('CONSTELLATION')
   const [mirrorMode,setMirrorMode]= useState('HORIZONTAL')
   const [colorway,  setColorway]  = useState('original')
-  const [asciiText, setAsciiText] = useState('')
 
   const canvasRef = useRef(null)
 
@@ -230,7 +185,6 @@ export default function DataPage() {
     setNormieId(null)
     setViz('CONSTELLATION')
     setColorway('original')
-    setAsciiText('')
     try {
       const res = await fetch(`${API_BASE}/normie/${id}/pixels`)
       if (!res.ok) throw new Error(`Token #${id} not found (${res.status})`)
@@ -323,11 +277,6 @@ export default function DataPage() {
       }
       rafId = requestAnimationFrame(frameConst)
 
-    // ── ASCII ─────────────────────────────────────────────
-    } else if (viz === 'ASCII') {
-      const text = drawAscii(ctx, grid, cw)
-      setAsciiText(text)
-
     // ── WAVEFORM ──────────────────────────────────────────
     } else if (viz === 'WAVEFORM') {
       drawWaveform(ctx, grid, cw)
@@ -412,11 +361,6 @@ export default function DataPage() {
             </button>
           ))}
         </div>
-      )}
-
-      {/* ASCII output */}
-      {viz === 'ASCII' && asciiText && (
-        <pre className="ascii-output">{asciiText}</pre>
       )}
 
       {/* Colorways + download */}

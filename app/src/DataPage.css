@@ -100,26 +100,6 @@
   opacity: 1;
 }
 
-.ascii-output {
-  width: 400px;
-  background: transparent;
-  border: 1px solid rgba(var(--fg-rgb), 0.15);
-  color: var(--fg);
-  font-family: "Courier New", monospace;
-  font-size: 0.9rem;
-  letter-spacing: 0.08em;
-  padding: 12px 16px;
-  overflow-x: auto;
-  white-space: pre;
-  line-height: 1.45;
-  margin-bottom: 16px;
-  scrollbar-width: none;
-}
-
-.ascii-output::-webkit-scrollbar {
-  display: none;
-}
-
 .data-panel {
   width: 100%;
   max-width: 480px;
