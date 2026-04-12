@@ -8,7 +8,7 @@
 
 .fusion-section {
   width: 100%;
-  max-width: 480px;
+  max-width: 560px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -23,17 +23,17 @@
   font-family: "Courier New", monospace;
 }
 
-.fusion-type-row {
+.fusion-row-header {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
 }
 
-/* 2x2 candidates grid */
+/* 4-column grid for 8 candidates */
 .candidates-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
 }
 
 .candidate-card {
@@ -42,16 +42,21 @@
   border: 1px solid rgba(var(--fg-rgb), 0.2);
   color: var(--fg);
   cursor: pointer;
-  padding: 8px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  transition: border-color 0.15s;
+  gap: 4px;
+  transition: border-color 0.15s, opacity 0.15s;
 }
 
-.candidate-card:hover:not(.parent-a):not(.parent-b):not(.candidate-placeholder-card) {
+.candidate-card:hover:not(.parent-a):not(.parent-b):not(.card-failed):not(:disabled) {
   border-color: rgba(var(--fg-rgb), 0.5);
+}
+
+.candidate-card:disabled:not(.parent-a):not(.parent-b) {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .candidate-card.parent-a {
@@ -63,6 +68,12 @@
   opacity: 0.75;
 }
 
+.candidate-card.card-failed {
+  opacity: 0.25;
+  cursor: default;
+  pointer-events: none;
+}
+
 .candidate-img {
   width: 100%;
   aspect-ratio: 1;
@@ -71,39 +82,46 @@
 }
 
 .candidate-id {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-family: "Courier New", monospace;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  opacity: 0.7;
+  letter-spacing: 0.08em;
+  opacity: 0.6;
 }
 
 .candidate-badge {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 4px;
+  right: 4px;
   background: var(--fg);
   color: var(--bg);
   font-family: "Courier New", monospace;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
   letter-spacing: 0.1em;
-  padding: 2px 6px;
+  padding: 1px 5px;
 }
 
-.candidate-placeholder-card {
-  cursor: default;
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-.candidate-placeholder {
-  width: 100%;
-  aspect-ratio: 1;
-  background: rgba(var(--fg-rgb), 0.05);
+.candidate-spinner {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(var(--bg-rgb), 0.7);
+}
+
+.candidate-burned {
+  position: absolute;
+  bottom: 22px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 0.55rem;
+  font-family: "Courier New", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
 }
 
 /* Blend slider row */
@@ -139,8 +157,8 @@
 
 /* Result canvas */
 .fusion-canvas {
-  width: 400px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 400px;
   height: auto;
   border: 1px solid rgba(var(--fg-rgb), 0.15);
   image-rendering: pixelated;
@@ -149,7 +167,6 @@
 
 .fusion-start-over {
   width: 100%;
-  margin-top: 4px;
   opacity: 0.6;
 }
 

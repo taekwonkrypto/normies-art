@@ -15,7 +15,6 @@ const COLORWAYS = [
   { id: 'ghost',     label: 'Ghost',     on: '#ffffff', off: '#111111' },
 ]
 
-const TYPES   = ['HUMAN', 'CAT', 'ALIEN', 'AGENT']
 const METHODS = ['XOR', 'OR', 'AND', '50/50', 'SPLIT', 'BLEND']
 
 function fusePixels(a, b, method, blendValue) {
@@ -51,117 +50,99 @@ function renderToCanvas(canvas, pixels, colorway) {
   }
 }
 
+function randomIds(count) {
+  const ids = new Set()
+  while (ids.size < count) ids.add(Math.floor(Math.random() * 10000))
+  return [...ids]
+}
+
 export default function FusionPage() {
-  const [selectedType,      setSelectedType]      = useState(null)
-  const [candidates,        setCandidates]        = useState([])
-  const [loadingCandidates, setLoadingCandidates] = useState(false)
-  const [loadingProgress,   setLoadingProgress]   = useState(0)
-  const [parentA,           setParentA]           = useState(null)
-  const [parentB,           setParentB]           = useState(null)
-  const [method,            setMethod]            = useState(null)
-  const [blendValue,        setBlendValue]        = useState(50)
-  const [fusedPixels,       setFusedPixels]       = useState(null)
-  const [colorway,          setColorway]          = useState('original')
-  const [downloading,       setDownloading]       = useState(false)
+  const [collectionSize, setCollectionSize] = useState(null)
+  const [candidateIds,   setCandidateIds]   = useState(() => randomIds(8))
+  const [failedIds,      setFailedIds]      = useState(new Set())
+  const [parentA,        setParentA]        = useState(null)
+  const [parentB,        setParentB]        = useState(null)
+  const [loadingPixels,  setLoadingPixels]  = useState({})
+  const [method,         setMethod]         = useState(null)
+  const [blendValue,     setBlendValue]     = useState(50)
+  const [fusedPixels,    setFusedPixels]    = useState(null)
+  const [colorway,       setColorway]       = useState('original')
+  const [downloading,    setDownloading]    = useState(false)
 
-  const canvasRef = useRef(null)
-  const abortRef  = useRef(null)
+  const canvasRef   = useRef(null)
+  const pixAborts   = useRef({})
 
-  // Check one ID against the target type; returns { id, pixels } or null
-  async function checkOne(id, type, signal) {
-    try {
-      const res = await fetch(`${API_BASE}/normie/${id}/metadata`, { signal })
-      if (!res.ok) return null
-      const data = await res.json()
-      if (data.error) return null
+  // Fetch collection size once on mount
+  useEffect(() => {
+    fetch(`${API_BASE}/history/stats`)
+      .then(r => r.json())
+      .then(data => {
+        const burned = parseInt(data.totalBurnedTokens ?? 0, 10)
+        if (!isNaN(burned)) setCollectionSize(10000 - burned)
+      })
+      .catch(() => {})
+  }, [])
 
-      const attrs = data.attributes ?? data
-      let normieType = null
-      if (Array.isArray(attrs)) {
-        normieType = attrs.find(t => t.trait_type?.toLowerCase() === 'type')?.value
-      } else {
-        normieType = attrs['Type'] ?? attrs['type']
-      }
-      if (normieType?.toUpperCase() !== type) return null
+  // Render canvas whenever fused pixels or colorway changes
+  useEffect(() => {
+    if (!fusedPixels || !canvasRef.current) return
+    const cw = COLORWAYS.find(c => c.id === colorway)
+    renderToCanvas(canvasRef.current, fusedPixels, cw)
+  }, [fusedPixels, colorway])
 
-      const pixRes = await fetch(`${API_BASE}/normie/${id}/pixels`, { signal })
-      if (!pixRes.ok) return null
-      const raw = (await pixRes.text()).trim()
-      if (raw.length < 1600) return null
-
-      return { id, pixels: raw.slice(0, 1600) }
-    } catch (err) {
-      if (err.name === 'AbortError') throw err
-      return null
-    }
-  }
-
-  async function fetchCandidates(type) {
-    if (abortRef.current) abortRef.current.abort()
-    const controller = new AbortController()
-    abortRef.current = controller
-
-    setLoadingCandidates(true)
-    setCandidates([])
-    setLoadingProgress(0)
-
-    const found = []
-    const tried = new Set()
-
-    function nextId() {
-      let id
-      do { id = Math.floor(Math.random() * 10000) } while (tried.has(id))
-      tried.add(id)
-      return id
-    }
-
-    try {
-      // Check 4 IDs concurrently, keep refilling until we have 4 matches
-      while (found.length < 4 && !controller.signal.aborted) {
-        const batch = Array.from({ length: 4 }, nextId)
-        const results = await Promise.allSettled(
-          batch.map(id => checkOne(id, type, controller.signal))
-        )
-        for (const r of results) {
-          if (controller.signal.aborted) break
-          if (r.status === 'fulfilled' && r.value) {
-            found.push(r.value)
-            setLoadingProgress(found.length)
-            setCandidates([...found])
-            if (found.length >= 4) break
-          }
-        }
-      }
-    } catch (err) {
-      if (err.name !== 'AbortError') console.error('fetchCandidates:', err)
-    } finally {
-      if (!controller.signal.aborted) setLoadingCandidates(false)
-    }
-  }
-
-  function handleTypeSelect(type) {
-    setSelectedType(type)
+  function shuffle() {
+    // Cancel any in-flight pixel fetches
+    Object.values(pixAborts.current).forEach(c => c.abort())
+    pixAborts.current = {}
+    setCandidateIds(randomIds(8))
+    setFailedIds(new Set())
     setParentA(null)
     setParentB(null)
     setMethod(null)
     setFusedPixels(null)
-    fetchCandidates(type)
   }
 
-  function handleCandidateClick(c) {
-    if (parentA?.id === c.id) {
+  async function selectCandidate(id) {
+    // Toggle off if already selected
+    if (parentA?.id === id) {
       setParentA(parentB)
       setParentB(null)
       setMethod(null)
       setFusedPixels(null)
-    } else if (parentB?.id === c.id) {
+      return
+    }
+    if (parentB?.id === id) {
       setParentB(null)
       setMethod(null)
       setFusedPixels(null)
-    } else if (!parentA) {
-      setParentA(c)
-    } else if (!parentB) {
-      setParentB(c)
+      return
+    }
+    // Both already chosen — no-op until user deselects one
+    if (parentA && parentB) return
+
+    // Fetch pixels for this normie
+    const controller = new AbortController()
+    pixAborts.current[id] = controller
+    setLoadingPixels(prev => ({ ...prev, [id]: true }))
+
+    try {
+      const res = await fetch(`${API_BASE}/normie/${id}/pixels`, { signal: controller.signal })
+      if (!res.ok) { setFailedIds(prev => new Set([...prev, id])); return }
+      const raw = (await res.text()).trim()
+      if (raw.length < 1600) { setFailedIds(prev => new Set([...prev, id])); return }
+
+      const candidate = { id, pixels: raw.slice(0, 1600) }
+      // Re-check state in setter to avoid stale closure issues
+      setParentA(prevA => {
+        if (!prevA) return candidate
+        setParentB(prevB => prevB ?? candidate)
+        return prevA
+      })
+    } catch (err) {
+      if (err.name !== 'AbortError') setFailedIds(prev => new Set([...prev, id]))
+    } finally {
+      setLoadingPixels(prev => { const n = { ...prev }; delete n[id]; return n })
+      delete pixAborts.current[id]
     }
   }
 
@@ -177,13 +158,6 @@ export default function FusionPage() {
     }
   }
 
-  // Redraw canvas whenever fused pixels or colorway change
-  useEffect(() => {
-    if (!fusedPixels || !canvasRef.current) return
-    const cw = COLORWAYS.find(c => c.id === colorway)
-    renderToCanvas(canvasRef.current, fusedPixels, cw)
-  }, [fusedPixels, colorway])
-
   async function downloadPng() {
     if (!fusedPixels) return
     setDownloading(true)
@@ -192,19 +166,18 @@ export default function FusionPage() {
       const GRID = 40
       const CELL = SIZE / GRID
       const cw   = COLORWAYS.find(c => c.id === colorway)
-      const offscreen = document.createElement('canvas')
-      offscreen.width  = SIZE
-      offscreen.height = SIZE
-      const ctx = offscreen.getContext('2d')
-      for (let y = 0; y < GRID; y++) {
+      const off  = document.createElement('canvas')
+      off.width  = SIZE
+      off.height = SIZE
+      const ctx  = off.getContext('2d')
+      for (let y = 0; y < GRID; y++)
         for (let x = 0; x < GRID; x++) {
           ctx.fillStyle = fusedPixels[y * GRID + x] === '1' ? cw.on : cw.off
           ctx.fillRect(x * CELL, y * CELL, CELL, CELL)
         }
-      }
       const methodSlug = method.replace(/\//g, '-').toLowerCase()
       await new Promise(resolve => {
-        offscreen.toBlob(blob => {
+        off.toBlob(blob => {
           const a = document.createElement('a')
           a.href = URL.createObjectURL(blob)
           a.download = `normie-fusion-${parentA.id}-${parentB.id}-${methodSlug}.png`
@@ -219,90 +192,89 @@ export default function FusionPage() {
   }
 
   function startOver() {
-    if (abortRef.current) abortRef.current.abort()
-    setSelectedType(null)
-    setCandidates([])
-    setLoadingCandidates(false)
-    setLoadingProgress(0)
+    Object.values(pixAborts.current).forEach(c => c.abort())
+    pixAborts.current = {}
     setParentA(null)
     setParentB(null)
     setMethod(null)
     setFusedPixels(null)
     setColorway('original')
+    shuffle()
   }
 
-  const activeCw = COLORWAYS.find(c => c.id === colorway)
+  const activeCw    = COLORWAYS.find(c => c.id === colorway)
+  const bothChosen  = parentA && parentB
 
   return (
     <div className="fusion-page">
       <header className="header">
         <h1 className="title">Normie Fusion</h1>
-        <p className="subtitle">Select a type to begin</p>
+        <p className="subtitle">
+          {collectionSize != null
+            ? `${collectionSize.toLocaleString()} normies in collection`
+            : 'Select two normies to fuse'}
+        </p>
       </header>
 
-      {/* Step 1: Type */}
+      {/* Candidate grid */}
       <div className="fusion-section">
-        <span className="section-label">Step 1 — Type</span>
-        <div className="fusion-type-row">
-          {TYPES.map(type => (
-            <button
-              key={type}
-              className={`effect-btn${selectedType === type ? ' active' : ''}`}
-              onClick={() => handleTypeSelect(type)}
-              disabled={loadingCandidates}
-            >
-              {type}
-            </button>
-          ))}
+        <div className="fusion-row-header">
+          <span className="section-label">
+            {!parentA
+              ? 'Select parent A'
+              : !parentB
+              ? 'Select parent B'
+              : 'Two selected — choose a method below'}
+          </span>
+          <button className="nav-link" onClick={shuffle}>Shuffle</button>
+        </div>
+
+        <div className="candidates-grid">
+          {candidateIds.map(id => {
+            const isA      = parentA?.id === id
+            const isB      = parentB?.id === id
+            const failed   = failedIds.has(id)
+            const fetching = !!loadingPixels[id]
+            return (
+              <button
+                key={id}
+                className={[
+                  'candidate-card',
+                  isA      ? 'parent-a'       : '',
+                  isB      ? 'parent-b'       : '',
+                  failed   ? 'card-failed'    : '',
+                  fetching ? 'card-fetching'  : '',
+                ].filter(Boolean).join(' ')}
+                onClick={() => !failed && selectCandidate(id)}
+                disabled={fetching || (!isA && !isB && bothChosen)}
+              >
+                <img
+                  src={`${API_BASE}/normie/${id}/image.svg`}
+                  alt={`Normie #${id}`}
+                  className="candidate-img"
+                  onError={() => setFailedIds(prev => new Set([...prev, id]))}
+                />
+                <span className="candidate-id">#{id}</span>
+                {isA && <span className="candidate-badge badge-a">A</span>}
+                {isB && <span className="candidate-badge badge-b">B</span>}
+                {fetching && (
+                  <div className="candidate-spinner">
+                    <div className="spinner" />
+                  </div>
+                )}
+                {failed && <span className="candidate-burned">burned</span>}
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      {/* Step 2: Candidates */}
-      {selectedType && (
+      {/* Fusion method — appears once both parents are chosen */}
+      {bothChosen && (
         <div className="fusion-section">
           <span className="section-label">
-            Step 2 — Select Two Parents
-            {loadingCandidates && ` (${loadingProgress}/4)`}
+            Fusion method — #{parentA.id} × #{parentB.id}
           </span>
-
-          <div className="candidates-grid">
-            {candidates.map(c => (
-              <button
-                key={c.id}
-                className={[
-                  'candidate-card',
-                  parentA?.id === c.id ? 'parent-a' : '',
-                  parentB?.id === c.id ? 'parent-b' : '',
-                ].filter(Boolean).join(' ')}
-                onClick={() => handleCandidateClick(c)}
-              >
-                <img
-                  src={`${API_BASE}/normie/${c.id}/image.svg`}
-                  alt={`Normie #${c.id}`}
-                  className="candidate-img"
-                />
-                <span className="candidate-id">#{c.id}</span>
-                {parentA?.id === c.id && <span className="candidate-badge">A</span>}
-                {parentB?.id === c.id && <span className="candidate-badge">B</span>}
-              </button>
-            ))}
-
-            {loadingCandidates && Array.from({ length: 4 - candidates.length }).map((_, i) => (
-              <div key={`ph-${i}`} className="candidate-card candidate-placeholder-card">
-                <div className="candidate-placeholder">
-                  <div className="spinner" />
-                </div>
-                <span className="candidate-id">…</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Step 3: Method */}
-      {parentA && parentB && (
-        <div className="fusion-section">
-          <span className="section-label">Step 3 — Fusion Method</span>
           <div className="effects-row">
             {METHODS.map(m => (
               <button
@@ -318,10 +290,7 @@ export default function FusionPage() {
             <div className="blend-control">
               <span className="blend-label">A</span>
               <input
-                type="range"
-                min="0"
-                max="100"
-                value={blendValue}
+                type="range" min="0" max="100" value={blendValue}
                 onChange={e => handleBlendChange(Number(e.target.value))}
                 className="blend-slider"
               />
@@ -332,12 +301,10 @@ export default function FusionPage() {
         </div>
       )}
 
-      {/* Step 4: Result */}
+      {/* Result */}
       {fusedPixels && (
         <div className="fusion-section">
-          <span className="section-label">
-            Result — #{parentA.id} × #{parentB.id} [{method}]
-          </span>
+          <span className="section-label">Result [{method}]</span>
           <canvas
             ref={canvasRef}
             width={400}
@@ -357,11 +324,7 @@ export default function FusionPage() {
                 </button>
               ))}
             </div>
-            <button
-              className="download-btn"
-              onClick={downloadPng}
-              disabled={downloading}
-            >
+            <button className="download-btn" onClick={downloadPng} disabled={downloading}>
               {downloading ? 'Downloading…' : 'Download PNG'}
             </button>
           </div>
