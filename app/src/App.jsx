@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import GIF from 'gif.js'
 import FusionPage from './FusionPage'
+import AnimatePage from './AnimatePage'
 import './App.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -308,6 +309,12 @@ function App() {
             Explore
           </button>
           <button
+            className={`nav-link${currentPage === 'animate' ? ' active' : ''}`}
+            onClick={() => setCurrentPage('animate')}
+          >
+            Animate
+          </button>
+          <button
             className={`nav-link${currentPage === 'create' ? ' active' : ''}`}
             onClick={() => setCurrentPage('create')}
           >
@@ -316,7 +323,7 @@ function App() {
         </div>
       </nav>
 
-      {currentPage === 'create' ? <FusionPage /> : (
+      {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage /> : (
       <div className="app">
       <header className="header">
         <h1 className="title">Normies Art Tools</h1>

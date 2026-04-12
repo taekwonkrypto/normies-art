@@ -1,0 +1,64 @@
+/* ── Animate page ───────────────────────────────────────── */
+
+.animate-page {
+  min-height: calc(100vh - 52px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 16px 80px;
+}
+
+.animate-canvas-wrap {
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  line-height: 0;
+  margin-bottom: 16px;
+}
+
+.animate-canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.anim-selector {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-bottom: 16px;
+  width: 100%;
+  max-width: 480px;
+}
+
+.anim-selector::-webkit-scrollbar {
+  display: none;
+}
+
+.anim-btn {
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.3);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.anim-btn:hover:not(.active) {
+  border-color: rgba(var(--fg-rgb), 0.6);
+}
+
+.anim-btn.active {
+  background: var(--fg);
+  color: var(--bg);
+  border-color: var(--fg);
+}
+
+.animate-panel {
+  width: 100%;
+  max-width: 480px;
+}
