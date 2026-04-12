@@ -73,6 +73,12 @@ function VersionThumb({ v, idx, svgText, cw, active, onClick }) {
 
 function App() {
   const [currentPage, setCurrentPage] = useState('explore')
+  const [menuOpen, setMenuOpen]       = useState(false)
+
+  function navigate(page) {
+    setCurrentPage(page)
+    setMenuOpen(false)
+  }
   const [inputId, setInputId]         = useState('')
   const [normie, setNormie]           = useState(null)
   const [loading, setLoading]         = useState(false)
@@ -303,32 +309,28 @@ function App() {
       <nav className="topbar">
         <span className="topbar-brand">Normies.Art Tools</span>
         <div className="topbar-nav">
-          <button
-            className={`nav-link${currentPage === 'explore' ? ' active' : ''}`}
-            onClick={() => setCurrentPage('explore')}
-          >
-            Explore
-          </button>
-          <button
-            className={`nav-link${currentPage === 'animate' ? ' active' : ''}`}
-            onClick={() => setCurrentPage('animate')}
-          >
-            Animate
-          </button>
-          <button
-            className={`nav-link${currentPage === 'data' ? ' active' : ''}`}
-            onClick={() => setCurrentPage('data')}
-          >
-            Data
-          </button>
-          <button
-            className={`nav-link${currentPage === 'create' ? ' active' : ''}`}
-            onClick={() => setCurrentPage('create')}
-          >
-            Create
-          </button>
+          <button className={`nav-link${currentPage === 'explore' ? ' active' : ''}`} onClick={() => navigate('explore')}>Explore</button>
+          <button className={`nav-link${currentPage === 'animate' ? ' active' : ''}`} onClick={() => navigate('animate')}>Animate</button>
+          <button className={`nav-link${currentPage === 'data'    ? ' active' : ''}`} onClick={() => navigate('data')}>Data</button>
+          <button className={`nav-link${currentPage === 'create'  ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
         </div>
+        <button
+          className={`hamburger${menuOpen ? ' open' : ''}`}
+          onClick={() => setMenuOpen(o => !o)}
+          aria-label="Menu"
+        >
+          <span /><span /><span />
+        </button>
       </nav>
+
+      {menuOpen && (
+        <div className="mobile-menu">
+          <button className={`mobile-nav-link${currentPage === 'explore' ? ' active' : ''}`} onClick={() => navigate('explore')}>Explore</button>
+          <button className={`mobile-nav-link${currentPage === 'animate' ? ' active' : ''}`} onClick={() => navigate('animate')}>Animate</button>
+          <button className={`mobile-nav-link${currentPage === 'data'    ? ' active' : ''}`} onClick={() => navigate('data')}>Data</button>
+          <button className={`mobile-nav-link${currentPage === 'create'  ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
+        </div>
+      )}
 
       {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage /> : currentPage === 'data' ? <DataPage /> : (
       <div className="app">
