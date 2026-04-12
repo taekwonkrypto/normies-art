@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import GIF from 'gif.js'
+import { shareOrDownload } from './share'
 import FusionPage from './FusionPage'
 import AnimatePage from './AnimatePage'
 import DataPage from './DataPage'
@@ -215,12 +216,8 @@ function App() {
         })
       }
       await new Promise((resolve, reject) => {
-        gif.on('finished', pngBlob => {
-          const a = document.createElement('a')
-          a.href = URL.createObjectURL(pngBlob)
-          a.download = `normie-${normie.id}-${colorway}.gif`
-          a.click()
-          URL.revokeObjectURL(a.href)
+        gif.on('finished', async pngBlob => {
+          await shareOrDownload(pngBlob, `normie-${normie.id}-${colorway}.gif`)
           resolve()
         })
         gif.on('abort', () => reject(new Error('aborted')))
@@ -249,12 +246,8 @@ function App() {
           canvas.height = 1200
           canvas.getContext('2d').drawImage(img, 0, 0, 1200, 1200)
           URL.revokeObjectURL(url)
-          canvas.toBlob(pngBlob => {
-            const a = document.createElement('a')
-            a.href = URL.createObjectURL(pngBlob)
-            a.download = `normie-${normie.id}-${colorway}.png`
-            a.click()
-            URL.revokeObjectURL(a.href)
+          canvas.toBlob(async pngBlob => {
+            await shareOrDownload(pngBlob, `normie-${normie.id}-${colorway}.png`)
             resolve()
           }, 'image/png')
         }

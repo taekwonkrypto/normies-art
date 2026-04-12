@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import GIF from 'gif.js'
+import { shareOrDownload } from './share'
 import './DataPage.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -154,12 +155,8 @@ export default function DataPage() {
     octx.imageSmoothingEnabled = false
     octx.drawImage(canvas, 0, 0, 1200, 1200)
     const slug = viz === 'MIRROR' ? `mirror-${mirrorMode.toLowerCase()}` : viz.toLowerCase()
-    out.toBlob(blob => {
-      const a = document.createElement('a')
-      a.href = URL.createObjectURL(blob)
-      a.download = `normie-${normieId}-${slug}.png`
-      a.click()
-      URL.revokeObjectURL(a.href)
+    out.toBlob(async blob => {
+      await shareOrDownload(blob, `normie-${normieId}-${slug}.png`)
     }, 'image/png')
   }
 
@@ -196,12 +193,8 @@ export default function DataPage() {
       })
       setGifState('encoding')
       await new Promise((resolve, reject) => {
-        gif.on('finished', blob => {
-          const a = document.createElement('a')
-          a.href = URL.createObjectURL(blob)
-          a.download = `normie-${normieId}-${slug}.gif`
-          a.click()
-          URL.revokeObjectURL(a.href)
+        gif.on('finished', async blob => {
+          await shareOrDownload(blob, `normie-${normieId}-${slug}.gif`)
           resolve()
         })
         gif.on('abort', () => reject(new Error('GIF aborted')))

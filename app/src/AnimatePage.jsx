@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import GIF from 'gif.js'
+import { shareOrDownload } from './share'
 import './AnimatePage.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -136,12 +137,8 @@ export default function AnimatePage() {
 
       setGifState('encoding')
       await new Promise((resolve, reject) => {
-        gif.on('finished', blob => {
-          const a = document.createElement('a')
-          a.href = URL.createObjectURL(blob)
-          a.download = `normie-${normieId}-${animation.toLowerCase()}.gif`
-          a.click()
-          URL.revokeObjectURL(a.href)
+        gif.on('finished', async blob => {
+          await shareOrDownload(blob, `normie-${normieId}-${animation.toLowerCase()}.gif`)
           resolve()
         })
         gif.on('abort', () => reject(new Error('GIF aborted')))
