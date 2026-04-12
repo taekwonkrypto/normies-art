@@ -1,4 +1,4 @@
-/* ── Music page ──────────────────────────────────────────── */
+/* ── Layout ── */
 
 .music-page {
   min-height: calc(100vh - 52px);
@@ -8,52 +8,82 @@
   padding: 48px 16px 80px;
 }
 
-/* ── Meta row (waveform + tags) ──────────────────────────── */
+/* ── Normie info section ── */
 
-.music-meta {
+.normie-info {
   display: flex;
-  gap: 8px;
+  gap: 20px;
   align-items: center;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-  justify-content: center;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 20px;
 }
 
-.music-tag {
-  border: 1px solid rgba(var(--fg-rgb), 0.25);
-  color: var(--fg);
+.normie-thumb {
+  width: 100px;
+  height: 100px;
+  image-rendering: pixelated;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  flex-shrink: 0;
+}
+
+.normie-details {
+  flex: 1;
+}
+
+.normie-name {
   font-family: "Courier New", monospace;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  padding: 0.15rem 0.5rem;
-  opacity: 0.6;
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  opacity: 0.9;
 }
 
-/* ── Playback controls ───────────────────────────────────── */
-
-.music-controls {
+.trait-pills {
   display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-/* BPM nudge buttons */
+.trait-pill {
+  font-family: "Courier New", monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border: 1px solid rgba(var(--fg-rgb), 0.25);
+  padding: 0.12rem 0.45rem;
+  opacity: 0.65;
+}
+
+/* ── Transport ── */
+
+.music-transport {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
 .bpm-nudge {
   background: transparent;
   border: 1px solid rgba(var(--fg-rgb), 0.25);
   color: var(--fg);
   font-family: "Courier New", monospace;
   font-size: 0.7rem;
-  padding: 0.25rem 0.45rem;
+  padding: 0.3rem 0.5rem;
   cursor: pointer;
-  opacity: 0.65;
-  transition: opacity 0.15s;
+  opacity: 0.6;
 }
-.bpm-nudge:hover { opacity: 1; }
 
-/* ── Swing bar ───────────────────────────────────────────── */
+.bpm-nudge:hover {
+  opacity: 1;
+}
+
+/* ── Swing ── */
 
 .music-swing-bar {
   display: flex;
@@ -61,25 +91,23 @@
   gap: 10px;
   width: 100%;
   max-width: 680px;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
 }
 
 .swing-label {
   font-family: "Courier New", monospace;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   opacity: 0.5;
-  white-space: nowrap;
   flex-shrink: 0;
 }
 
 .swing-val {
   font-family: "Courier New", monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  opacity: 0.55;
-  width: 2.8rem;
+  font-size: 0.6rem;
+  opacity: 0.5;
+  width: 2.5rem;
   text-align: right;
   flex-shrink: 0;
 }
@@ -94,53 +122,145 @@
   outline: none;
   cursor: pointer;
 }
+
 .swing-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
-  appearance: none;
   width: 12px;
   height: 12px;
   border-radius: 50%;
   background: var(--fg);
-  opacity: 0.75;
+  opacity: 0.7;
   cursor: pointer;
-  transition: opacity 0.15s;
 }
-.swing-slider::-webkit-slider-thumb:hover { opacity: 1; }
+
 .swing-slider::-moz-range-thumb {
   width: 12px;
   height: 12px;
   border-radius: 50%;
   background: var(--fg);
-  opacity: 0.75;
+  opacity: 0.7;
   border: none;
   cursor: pointer;
 }
 
-/* ── Unified piano roll (melody + drum rows) ─────────────── */
+/* ── Step sequencer ── */
 
-.piano-roll-wrap {
+.step-seq {
   width: 100%;
   max-width: 680px;
-  border: 1px solid rgba(var(--fg-rgb), 0.15);
-  line-height: 0;
-  margin-bottom: 14px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  margin-bottom: 20px;
 }
 
-.piano-roll-wrap::-webkit-scrollbar {
+.seq-section {
+  margin-bottom: 12px;
+}
+
+.seq-section-label {
+  font-family: "Courier New", monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  opacity: 0.4;
+  margin-bottom: 6px;
+  padding-left: 56px;
+}
+
+/* Melody row: label slot + 16 equal columns */
+.seq-melody-row {
+  display: grid;
+  grid-template-columns: 56px repeat(16, 1fr);
+}
+
+/* Drum rows: label + 16 equal columns */
+.drum-row {
+  display: grid;
+  grid-template-columns: 56px repeat(16, 1fr);
+  margin-bottom: 2px;
+}
+
+.drum-row-label {
+  font-family: "Courier New", monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.5;
+  display: flex;
+  align-items: center;
+  padding-right: 6px;
+  justify-content: flex-end;
+}
+
+/* Cells */
+.seq-cell {
+  box-sizing: border-box;
+  border: 1px solid rgba(var(--fg-rgb), 0.08);
+  border-left: none;
+  position: relative;
+  background: var(--cw-off, transparent);
+}
+
+.seq-cell:first-child {
+  border-left: 1px solid rgba(var(--fg-rgb), 0.08);
+}
+
+.melody-cell {
+  height: 52px;
+}
+
+.drum-cell {
+  height: 24px;
+}
+
+/* Beat-start marker every 4 steps */
+.beat-start {
+  border-left: 1px solid rgba(var(--fg-rgb), 0.25) !important;
+}
+
+/* Active (has note / triggered) */
+.seq-cell.active {
+  background: var(--cw-on);
+  opacity: 0.85;
+}
+
+.drum-cell.active {
+  background: var(--cw-on);
+  opacity: 0.75;
+}
+
+/* Currently playing step */
+.seq-cell.playing {
+  background: var(--cw-on) !important;
+  opacity: 1 !important;
+}
+
+.seq-cell.playing.active {
+  opacity: 1 !important;
+}
+
+.seq-cell:not(.active).playing {
+  background: var(--cw-on) !important;
+  opacity: 0.25 !important;
+}
+
+/* Note name label inside melody cell */
+.note-name {
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: "Courier New", monospace;
+  font-size: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--cw-off);
+  white-space: nowrap;
+}
+
+.seq-cell:not(.active) .note-name {
   display: none;
 }
 
-.piano-roll-canvas {
-  display: block;
-  width: 100%;
-  max-width: 680px;
-  height: auto;
-  cursor: crosshair;
-}
-
-/* ── Visualizer controls + canvas ────────────────────────── */
+/* ── Visualizer ── */
 
 .music-viz-bar {
   display: flex;
@@ -158,7 +278,7 @@
 
 .music-hint {
   font-family: "Courier New", monospace;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   opacity: 0.3;
@@ -180,17 +300,34 @@
   height: auto;
 }
 
-/* ── Bottom panel ────────────────────────────────────────── */
+/* ── Bottom panel ── */
 
 .music-panel {
   width: 100%;
   max-width: 680px;
 }
 
-/* ── Mobile ──────────────────────────────────────────────── */
+/* ── Mobile ── */
 
 @media (max-width: 540px) {
-  .piano-roll-canvas {
-    min-width: 480px;
+  .normie-info {
+    gap: 12px;
+  }
+
+  .normie-thumb {
+    width: 72px;
+    height: 72px;
+  }
+
+  .seq-section-label {
+    font-size: 0.55rem;
+  }
+
+  .melody-cell {
+    height: 40px;
+  }
+
+  .drum-cell {
+    height: 20px;
   }
 }
