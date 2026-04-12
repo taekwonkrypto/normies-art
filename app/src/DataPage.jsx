@@ -44,25 +44,20 @@ const MIRROR_DESCRIPTIONS = {
     "Each pixel's distance from center is decomposed into its principal and tangential components, then folded into a single 45° wedge. That octant tiles outward through eight reflections, collapsing the full grid into a radial mandala.",
 }
 
-// GIF record durations per visualization (ms)
+// GIF record durations — only for animated vizzes
 const GIF_DURATIONS = {
   CONSTELLATION: 3000,
-  WAVEFORM:      3000,
-  HEATMAP:       4200,  // one full wave cycle at 1.5 rad/s
   FINGERPRINT:   2600,  // one ripple cycle at 2.5 rad/s
-  MIRROR:        3200,
 }
+
+const ANIMATED_VIZZES = new Set(['CONSTELLATION', 'FINGERPRINT'])
 
 // ── Helpers ───────────────────────────────────────────────
 
-function hexRgb(hex) {
-  const h = hex.replace('#', '')
-  return [parseInt(h.slice(0,2),16), parseInt(h.slice(2,4),16), parseInt(h.slice(4,6),16)]
-}
-
 function lerpColor(hex0, hex1, t) {
-  const [r0,g0,b0] = hexRgb(hex0)
-  const [r1,g1,b1] = hexRgb(hex1)
+  const h0 = hex0.replace('#', ''), h1 = hex1.replace('#', '')
+  const r0 = parseInt(h0.slice(0,2),16), g0 = parseInt(h0.slice(2,4),16), b0 = parseInt(h0.slice(4,6),16)
+  const r1 = parseInt(h1.slice(0,2),16), g1 = parseInt(h1.slice(2,4),16), b1 = parseInt(h1.slice(4,6),16)
   return `rgb(${Math.round(r0+(r1-r0)*t)},${Math.round(g0+(g1-g0)*t)},${Math.round(b0+(b1-b0)*t)})`
 }
 
@@ -269,14 +264,12 @@ export default function DataPage() {
       }
       rafId = requestAnimationFrame(frameConst)
 
-    // ── WAVEFORM — scrolls right to left ───────────────────
+    // ── WAVEFORM — static ──────────────────────────────────
     } else if (viz === 'WAVEFORM') {
-      const counts = rowCounts(grid)
-      const maxC   = Math.max(...counts)
-      const minC   = Math.min(...counts)
-
-      // Smooth once; data doesn't change
-      const smooth = counts.map((_, i) => {
+      const counts  = rowCounts(grid)
+      const maxC    = Math.max(...counts)
+      const minC    = Math.min(...counts)
+      const smooth  = counts.map((_, i) => {
         let sum = 0, n = 0
         for (let w = -2; w <= 2; w++) {
           const idx = i + w
@@ -284,73 +277,43 @@ export default function DataPage() {
         }
         return sum / n
       })
-
-      const SCROLL_SPEED = 8  // grid cells per second
       const centerY = SIZE / 2
       const MAX_H   = 178
       const barW    = SIZE / GRID
 
-      function frameWave(now) {
-        ctx.fillStyle = cw.off
-        ctx.fillRect(0, 0, SIZE, SIZE)
-
-        const offset = (now / 1000 * SCROLL_SPEED) % GRID
-        const frac   = offset % 1
-
-        ctx.fillStyle = cw.on
-        for (let i = 0; i <= GRID; i++) {
-          const srcIdx = Math.floor(i + offset) % GRID
-          const x      = (i - frac) * barW
-          if (x > -barW && x < SIZE) {
-            const h = Math.max(1, (smooth[srcIdx] / 40) * MAX_H)
-            ctx.fillRect(x,          centerY - h, barW - 1, h)
-            ctx.fillRect(x, centerY + 1,          barW - 1, h)
-          }
-        }
-
-        ctx.globalAlpha = 0.35
-        ctx.fillRect(0, centerY, SIZE, 1)
-        ctx.globalAlpha = 0.55
-        ctx.font = '9px "Courier New", monospace'
-        ctx.textAlign = 'left'; ctx.textBaseline = 'top'
-        ctx.fillText(`max: ${maxC}`, 4, 4)
-        ctx.fillText(`min: ${minC}`, 4, SIZE - 14)
-        ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'
-        ctx.fillText('0', SIZE - 4, centerY - 2)
-        ctx.globalAlpha = 1
-
-        rafId = requestAnimationFrame(frameWave)
+      ctx.fillStyle = cw.off
+      ctx.fillRect(0, 0, SIZE, SIZE)
+      ctx.fillStyle = cw.on
+      for (let i = 0; i < GRID; i++) {
+        const h = Math.max(1, (smooth[i] / 40) * MAX_H)
+        const x = i * barW
+        ctx.fillRect(x, centerY - h, barW - 1, h)
+        ctx.fillRect(x, centerY + 1, barW - 1, h)
       }
-      rafId = requestAnimationFrame(frameWave)
+      ctx.globalAlpha = 0.35
+      ctx.fillRect(0, centerY, SIZE, 1)
+      ctx.globalAlpha = 0.55
+      ctx.font = '9px "Courier New", monospace'
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top'
+      ctx.fillText(`max: ${maxC}`, 4, 4)
+      ctx.fillText(`min: ${minC}`, 4, SIZE - 14)
+      ctx.textAlign = 'right'; ctx.textBaseline = 'bottom'
+      ctx.fillText('0', SIZE - 4, centerY - 2)
+      ctx.globalAlpha = 1
 
-    // ── HEATMAP — diagonal shimmer wave ────────────────────
+    // ── HEATMAP — static ───────────────────────────────────
     } else if (viz === 'HEATMAP') {
-      // Precompute static density per cell
-      const densities = Array.from({ length: GRID }, (_, r) =>
-        Array.from({ length: GRID }, (_, c) => {
+      for (let r = 0; r < GRID; r++)
+        for (let c = 0; c < GRID; c++) {
           let d = 0
           for (let dr = -1; dr <= 1; dr++)
             for (let dc = -1; dc <= 1; dc++) {
               const nr = r+dr, nc = c+dc
               if (nr >= 0 && nr < GRID && nc >= 0 && nc < GRID && grid[nr][nc]) d++
             }
-          return d
-        })
-      )
-
-      function frameHeat(now) {
-        const t = now / 1000
-        for (let r = 0; r < GRID; r++)
-          for (let c = 0; c < GRID; c++) {
-            const base  = densities[r][c]
-            const wave  = Math.sin(t * 1.5 + (r + c) * 0.25) * 1.8
-            const animD = Math.max(0, Math.min(9, base + wave))
-            ctx.fillStyle = lerpColor(cw.off, cw.on, animD / 9)
-            ctx.fillRect(c*CELL, r*CELL, CELL, CELL)
-          }
-        rafId = requestAnimationFrame(frameHeat)
-      }
-      rafId = requestAnimationFrame(frameHeat)
+          ctx.fillStyle = lerpColor(cw.off, cw.on, d / 9)
+          ctx.fillRect(c*CELL, r*CELL, CELL, CELL)
+        }
 
     // ── FINGERPRINT — outward ripple waves ─────────────────
     } else if (viz === 'FINGERPRINT') {
@@ -385,31 +348,9 @@ export default function DataPage() {
       }
       rafId = requestAnimationFrame(frameFingerprint)
 
-    // ── MIRROR — slow rotation ─────────────────────────────
+    // ── MIRROR — static ────────────────────────────────────
     } else if (viz === 'MIRROR') {
-      // Paint mirror image once to an offscreen canvas, then rotate it each frame
-      const offscreen    = document.createElement('canvas')
-      offscreen.width    = SIZE
-      offscreen.height   = SIZE
-      drawMirror(offscreen.getContext('2d'), grid, cw, mirrorMode)
-
-      // Kaleidoscope has 8-fold symmetry so even a modest speed feels active
-      const rotSpeed = mirrorMode === 'KALEIDOSCOPE' ? 0.20 : 0.10
-
-      function frameMirror(now) {
-        const angle = (now / 1000) * rotSpeed
-
-        ctx.fillStyle = cw.off
-        ctx.fillRect(0, 0, SIZE, SIZE)
-        ctx.save()
-        ctx.translate(SIZE / 2, SIZE / 2)
-        ctx.rotate(angle)
-        ctx.drawImage(offscreen, -SIZE / 2, -SIZE / 2)
-        ctx.restore()
-
-        rafId = requestAnimationFrame(frameMirror)
-      }
-      rafId = requestAnimationFrame(frameMirror)
+      drawMirror(ctx, grid, cw, mirrorMode)
     }
 
     return () => {
@@ -507,9 +448,11 @@ export default function DataPage() {
             <button className="download-btn" onClick={downloadPng} disabled={normieId === null || busy}>
               Download PNG
             </button>
-            <button className="download-btn" onClick={downloadGif} disabled={normieId === null || busy}>
-              {gifState === 'recording' ? 'Recording…' : gifState === 'encoding' ? 'Encoding…' : 'Download GIF'}
-            </button>
+            {ANIMATED_VIZZES.has(viz) && (
+              <button className="download-btn" onClick={downloadGif} disabled={normieId === null || busy}>
+                {gifState === 'recording' ? 'Recording…' : gifState === 'encoding' ? 'Encoding…' : 'Download GIF'}
+              </button>
+            )}
           </div>
         </div>
       )}
