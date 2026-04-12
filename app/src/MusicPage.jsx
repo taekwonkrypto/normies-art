@@ -119,6 +119,53 @@ function buildOscGain(ctx, freq, t0, dur, waveform, detuneCents) {
   return gain
 }
 
+const DRUM_LABELS = ['KICK', 'SNARE', 'HH', 'OPEN']
+
+function synthKick(ctx, t0, dest) {
+  const osc = ctx.createOscillator()
+  osc.frequency.setValueAtTime(120, t0)
+  osc.frequency.exponentialRampToValueAtTime(0.001, t0 + 0.45)
+  const gain = ctx.createGain()
+  gain.gain.setValueAtTime(1.0, t0)
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.45)
+  osc.connect(gain); gain.connect(dest)
+  osc.start(t0); osc.stop(t0 + 0.5)
+}
+
+function synthSnare(ctx, t0, dest) {
+  const dur = 0.18
+  const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * dur), ctx.sampleRate)
+  const d = buf.getChannelData(0)
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1
+  const noise = ctx.createBufferSource()
+  noise.buffer = buf
+  const ng = ctx.createGain()
+  ng.gain.setValueAtTime(0.7, t0); ng.gain.exponentialRampToValueAtTime(0.001, t0 + dur)
+  noise.connect(ng); ng.connect(dest); noise.start(t0); noise.stop(t0 + dur)
+
+  const osc = ctx.createOscillator()
+  osc.type = 'triangle'; osc.frequency.value = 185
+  const og = ctx.createGain()
+  og.gain.setValueAtTime(0.5, t0); og.gain.exponentialRampToValueAtTime(0.001, t0 + 0.07)
+  osc.connect(og); og.connect(dest); osc.start(t0); osc.stop(t0 + 0.07)
+}
+
+function synthHihat(ctx, t0, dest, open = false) {
+  const dur = open ? 0.25 : 0.04
+  const buf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * (dur + 0.01)), ctx.sampleRate)
+  const d = buf.getChannelData(0)
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1
+  const noise = ctx.createBufferSource()
+  noise.buffer = buf
+  const hpf = ctx.createBiquadFilter()
+  hpf.type = 'highpass'; hpf.frequency.value = 7000
+  const gain = ctx.createGain()
+  gain.gain.setValueAtTime(open ? 0.35 : 0.28, t0)
+  gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur)
+  noise.connect(hpf); hpf.connect(gain); gain.connect(dest)
+  noise.start(t0); noise.stop(t0 + dur + 0.01)
+}
+
 function encodeWav(ab) {
   const nCh = ab.numberOfChannels, sr = ab.sampleRate, len = ab.length
   const blockAlign = nCh * 2, dataSize = len * blockAlign
@@ -161,8 +208,10 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
   const [audioReady,  setAudioReady]  = useState(false)
   const [bpm,         setBpm]         = useState(120)
   const [bpmDraft,    setBpmDraft]    = useState('120')
+  const [drumGrid,    setDrumGrid]    = useState(null)
 
   const pianoRollRef   = useRef(null)
+  const drumCanvasRef  = useRef(null)
   const vizCanvasRef   = useRef(null)
   const audioCtxRef    = useRef(null)
   const analyserRef    = useRef(null)
@@ -173,12 +222,14 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
   const loopingRef     = useRef(false)
   const audioParamsRef = useRef(null)
   const localGridRef   = useRef(null)
+  const drumGridRef    = useRef(null)
   const bpmRef         = useRef(120)
 
   useEffect(() => { playingRef.current     = playing },    [playing])
   useEffect(() => { loopingRef.current     = looping },    [looping])
   useEffect(() => { audioParamsRef.current = audioParams }, [audioParams])
   useEffect(() => { localGridRef.current   = localGrid },  [localGrid])
+  useEffect(() => { drumGridRef.current    = drumGrid },   [drumGrid])
   useEffect(() => { bpmRef.current         = bpm },        [bpm])
 
   // ── AudioContext setup (lazy — requires user gesture) ──────────────────
@@ -237,6 +288,17 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
     }
   }
 
+  // ── Play drums for one beat column ─────────────────────────────────────
+  function playDrumColumn(ctx, col, t0) {
+    const dg   = drumGridRef.current
+    const dest = masterGainRef.current
+    if (!dg || !dest) return
+    if (dg[0][col]) synthKick(ctx, t0, dest)
+    if (dg[1][col]) synthSnare(ctx, t0, dest)
+    if (dg[2][col]) synthHihat(ctx, t0, dest, false)
+    if (dg[3][col]) synthHihat(ctx, t0, dest, true)
+  }
+
   // ── Sequencer ──────────────────────────────────────────────────────────
   function cancelPlayback() {
     if (beatTimerRef.current) { clearTimeout(beatTimerRef.current); beatTimerRef.current = null }
@@ -266,6 +328,7 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
       const noteDur = (60 / currentBpm) * 0.8
       setCurrentBeat(beat)
       playColumn(ctx, beat, ctx.currentTime, noteDur, params)
+      playDrumColumn(ctx, beat, ctx.currentTime)
       beat++
       beatTimerRef.current = setTimeout(tick, beatMs)
     }
@@ -349,6 +412,65 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
     }
     ctx.globalAlpha = 1
   }, [localGrid, currentBeat, colorway])
+
+  // ── Drum grid draw ────────────────────────────────────────────────────
+  useEffect(() => {
+    const canvas = drumCanvasRef.current
+    if (!canvas || !drumGrid) return
+    const cwObj = COLORWAYS.find(c => c.id === colorway)
+    const ctx   = canvas.getContext('2d')
+    const W = canvas.width, H = canvas.height
+    const LABEL_W = 30
+    const cellW = (W - LABEL_W) / GRID
+    const rowH  = H / 4
+
+    ctx.fillStyle = cwObj.off
+    ctx.fillRect(0, 0, W, H)
+
+    for (let row = 0; row < 4; row++) {
+      for (let col = 0; col < GRID; col++) {
+        const x = LABEL_W + col * cellW
+        const y = row * rowH
+        ctx.fillStyle   = cwObj.on
+        ctx.globalAlpha = drumGrid[row][col] ? 0.88 : 0.06
+        ctx.fillRect(x + 0.5, y + 0.5, cellW - 1, rowH - 1)
+      }
+    }
+    ctx.globalAlpha = 1
+
+    if (currentBeat >= 0 && currentBeat < GRID) {
+      const x = LABEL_W + currentBeat * cellW
+      ctx.fillStyle = cwObj.on
+      ctx.globalAlpha = 0.18
+      ctx.fillRect(x, 0, cellW, H)
+      ctx.globalAlpha = 0.75
+      ctx.fillRect(x, 0, cellW, 2)
+      ctx.globalAlpha = 1
+    }
+
+    ctx.strokeStyle = cwObj.on
+    for (let col = 0; col <= GRID; col++) {
+      ctx.globalAlpha = col % 4 === 0 ? 0.22 : 0.06
+      ctx.lineWidth   = col % 4 === 0 ? 1 : 0.5
+      const x = LABEL_W + col * cellW
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke()
+    }
+    for (let row = 0; row <= 4; row++) {
+      ctx.globalAlpha = 0.18; ctx.lineWidth = 0.5
+      const y = row * rowH
+      ctx.beginPath(); ctx.moveTo(LABEL_W, y); ctx.lineTo(W, y); ctx.stroke()
+    }
+    ctx.globalAlpha = 1
+
+    ctx.font = `8px "Courier New", monospace`
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle'
+    ctx.fillStyle = cwObj.on
+    for (let row = 0; row < 4; row++) {
+      ctx.globalAlpha = 0.55
+      ctx.fillText(DRUM_LABELS[row], LABEL_W - 3, row * rowH + rowH / 2)
+    }
+    ctx.globalAlpha = 1
+  }, [drumGrid, currentBeat, colorway])
 
   // ── Visualizer ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -440,12 +562,35 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
     })
   }
 
+  // ── Drum grid click — toggle cells ───────────────────────────────────
+  function handleDrumClick(e) {
+    const canvas = drumCanvasRef.current
+    if (!canvas || !drumGrid) return
+    const rect   = canvas.getBoundingClientRect()
+    const scaleX = canvas.width  / rect.width
+    const scaleY = canvas.height / rect.height
+    const px = (e.clientX - rect.left) * scaleX
+    const py = (e.clientY - rect.top)  * scaleY
+    const LABEL_W = 30
+    const cellW = (canvas.width - LABEL_W) / GRID
+    const rowH  = canvas.height / 4
+    const col = Math.floor((px - LABEL_W) / cellW)
+    const row = Math.floor(py / rowH)
+    if (col < 0 || col >= GRID || row < 0 || row >= 4) return
+    setDrumGrid(prev => {
+      const next = prev.map(r => [...r])
+      next[row][col] = !next[row][col]
+      return next
+    })
+  }
+
   // ── Load ──────────────────────────────────────────────────────────────
   async function loadById(id) {
     stopPlayback()
     setLoading(true)
     setError(null)
     setLocalGrid(null)
+    setDrumGrid(null)
     setAudioParams(null)
     setCurrentBeat(-1)
 
@@ -467,6 +612,12 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
 
       const params = getAudioParams(traitData)
       setLocalGrid(parsedGrid)
+      setDrumGrid([
+        parsedGrid[39].slice(), // KICK — bottom row
+        parsedGrid[38].slice(), // SNARE
+        parsedGrid[37].slice(), // HH
+        parsedGrid[36].slice(), // OPEN
+      ])
       setAudioParams(params)
       setBpm(params.bpm)
       setBpmDraft(String(params.bpm))
@@ -538,6 +689,18 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
           } else {
             buildOscGain(offCtx, freq, t0, noteDur, params.waveform, 0).connect(dest)
           }
+        }
+      }
+
+      // Drums
+      const dg = drumGridRef.current
+      if (dg) {
+        for (let col = 0; col < GRID; col++) {
+          const t0 = col * beatDur
+          if (dg[0][col]) synthKick(offCtx,   t0, masterOff)
+          if (dg[1][col]) synthSnare(offCtx,  t0, masterOff)
+          if (dg[2][col]) synthHihat(offCtx,  t0, masterOff, false)
+          if (dg[3][col]) synthHihat(offCtx,  t0, masterOff, true)
         }
       }
 
@@ -646,6 +809,16 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
               height={400}
               className="piano-roll-canvas"
               onClick={handleRollClick}
+            />
+          </div>
+
+          <div className="drum-roll-wrap">
+            <canvas
+              ref={drumCanvasRef}
+              width={680}
+              height={120}
+              className="drum-roll-canvas"
+              onClick={handleDrumClick}
             />
           </div>
 

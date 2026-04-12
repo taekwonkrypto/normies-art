@@ -71,6 +71,30 @@
   cursor: crosshair;
 }
 
+/* ── Drum grid ───────────────────────────────────────────── */
+
+.drum-roll-wrap {
+  width: 100%;
+  max-width: 680px;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  line-height: 0;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.drum-roll-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+.drum-roll-canvas {
+  display: block;
+  width: 100%;
+  max-width: 680px;
+  height: auto;
+  cursor: crosshair;
+}
+
 /* ── Visualizer controls + canvas ────────────────────────── */
 
 .music-viz-bar {
