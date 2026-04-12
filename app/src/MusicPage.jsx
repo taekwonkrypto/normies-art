@@ -857,6 +857,34 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
             </div>
           </div>
 
+          {/* Seed description */}
+          {(() => {
+            const p = normieData.params
+            const SCALE_NAMES = { pentatonic: 'pentatonic', pentatonic7: 'pentatonic + ♭7', wholetone: 'whole tone' }
+            const WAVE_NAMES  = { sine: 'sine', triangle: 'triangle', sawtooth: 'sawtooth', square: 'square' }
+            const tags = [
+              WAVE_NAMES[p.waveform] || p.waveform,
+              SCALE_NAMES[p.scale] || p.scale,
+              `oct ${p.octaveBase}–${p.octaveBase + 1}`,
+              p.reverbDecay >= 0.6 ? 'long reverb' : 'short reverb',
+              ...(p.hasChorus ? ['chorus'] : []),
+              ...(p.isLegato ? ['legato'] : []),
+            ]
+            return (
+              <div className="music-seed-info">
+                <p className="seed-body">
+                  Five facial regions — hair, brow, cheek, jaw, and neck — were analyzed for pixel
+                  density and lateral balance to compose this sequence. The melody's rhythm,
+                  contour, and velocity emerge directly from where the pixels fall. The drums
+                  follow the same data. No two Normies produce the same composition.
+                </p>
+                <div className="seed-tags">
+                  {tags.map(tag => <span key={tag} className="seed-tag">{tag}</span>)}
+                </div>
+              </div>
+            )
+          })()}
+
           {/* Transport */}
           <div className="music-transport">
             <button className="bpm-nudge" onClick={() => nudgeBpm(-5)}>−5</button>
