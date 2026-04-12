@@ -49,7 +49,7 @@ function drawPixels(ctx, grid, cw) {
     }
 }
 
-export default function AnimatePage() {
+export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
   const [inputId,   setInputId]   = useState('')
   const [normieId,  setNormieId]  = useState(null)
   const [grid,      setGrid]      = useState(null)
@@ -61,12 +61,7 @@ export default function AnimatePage() {
 
   const canvasRef = useRef(null)
 
-  async function loadNormie() {
-    const id = parseInt(inputId, 10)
-    if (isNaN(id) || id < 0 || id > 9999) {
-      setError('Please enter a valid token ID between 0 and 9999.')
-      return
-    }
+  async function loadById(id) {
     setLoading(true)
     setError(null)
     setGrid(null)
@@ -80,6 +75,7 @@ export default function AnimatePage() {
       if (raw.length < 1600) throw new Error(`Pixel data unavailable for #${id}`)
       setGrid(parseGrid(raw.slice(0, 1600)))
       setNormieId(id)
+      onIdLoad?.(id)
     } catch (err) {
       setError(err.message || 'Something went wrong.')
     } finally {
@@ -87,9 +83,25 @@ export default function AnimatePage() {
     }
   }
 
+  async function loadNormie() {
+    const id = parseInt(inputId, 10)
+    if (isNaN(id) || id < 0 || id > 9999) {
+      setError('Please enter a valid token ID between 0 and 9999.')
+      return
+    }
+    await loadById(id)
+  }
+
   function handleKeyDown(e) {
     if (e.key === 'Enter') loadNormie()
   }
+
+  // Auto-load when sharedId changes from another page
+  useEffect(() => {
+    if (sharedId === null || sharedId === normieId) return
+    setInputId(String(sharedId))
+    loadById(sharedId)
+  }, [sharedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function downloadGif() {
     const canvas = canvasRef.current

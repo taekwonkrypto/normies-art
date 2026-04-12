@@ -4,6 +4,7 @@ import { shareOrDownload } from './share'
 import FusionPage from './FusionPage'
 import AnimatePage from './AnimatePage'
 import DataPage from './DataPage'
+import MusicPage from './MusicPage'
 import './App.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -75,6 +76,7 @@ function VersionThumb({ v, idx, svgText, cw, active, onClick }) {
 function App() {
   const [currentPage, setCurrentPage] = useState('explore')
   const [menuOpen, setMenuOpen]       = useState(false)
+  const [sharedId, setSharedId]       = useState(null)
 
   function navigate(page) {
     setCurrentPage(page)
@@ -259,13 +261,7 @@ function App() {
     }
   }
 
-  async function loadNormie() {
-    const id = parseInt(inputId, 10)
-    if (isNaN(id) || id < 0 || id > 9999) {
-      setError('Please enter a valid token ID between 0 and 9999.')
-      setNormie(null)
-      return
-    }
+  async function loadById(id) {
     setLoading(true)
     setError(null)
     setNormie(null)
@@ -274,7 +270,6 @@ function App() {
     setActiveVersionIdx(null)
     setVersionSvgTexts({})
     setPlaying(false)
-
     try {
       const res = await fetch(`${API_BASE}/normie/${id}/metadata`)
       if (!res.ok) throw new Error(`Token #${id} not found (${res.status})`)
@@ -282,14 +277,31 @@ function App() {
       console.log(`[normie #${id}] /metadata raw:`, data)
       const traits = data.attributes ?? data
       console.log(`[normie #${id}] traits (${traits.length}):`, traits)
-
       setNormie({ id, traits })
+      setSharedId(id)
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
   }
+
+  async function loadNormie() {
+    const id = parseInt(inputId, 10)
+    if (isNaN(id) || id < 0 || id > 9999) {
+      setError('Please enter a valid token ID between 0 and 9999.')
+      setNormie(null)
+      return
+    }
+    await loadById(id)
+  }
+
+  // Auto-load when another page sets a new sharedId
+  useEffect(() => {
+    if (sharedId === null || normie?.id === sharedId) return
+    setInputId(String(sharedId))
+    loadById(sharedId)
+  }, [sharedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') loadNormie()
@@ -305,6 +317,7 @@ function App() {
           <button className={`nav-link${currentPage === 'explore' ? ' active' : ''}`} onClick={() => navigate('explore')}>Explore</button>
           <button className={`nav-link${currentPage === 'animate' ? ' active' : ''}`} onClick={() => navigate('animate')}>Animate</button>
           <button className={`nav-link${currentPage === 'data'    ? ' active' : ''}`} onClick={() => navigate('data')}>Data</button>
+          <button className={`nav-link${currentPage === 'music'   ? ' active' : ''}`} onClick={() => navigate('music')}>Music</button>
           <button className={`nav-link${currentPage === 'create'  ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
         </div>
         <button
@@ -321,11 +334,12 @@ function App() {
           <button className={`mobile-nav-link${currentPage === 'explore' ? ' active' : ''}`} onClick={() => navigate('explore')}>Explore</button>
           <button className={`mobile-nav-link${currentPage === 'animate' ? ' active' : ''}`} onClick={() => navigate('animate')}>Animate</button>
           <button className={`mobile-nav-link${currentPage === 'data'    ? ' active' : ''}`} onClick={() => navigate('data')}>Data</button>
+          <button className={`mobile-nav-link${currentPage === 'music'   ? ' active' : ''}`} onClick={() => navigate('music')}>Music</button>
           <button className={`mobile-nav-link${currentPage === 'create'  ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
         </div>
       )}
 
-      {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage /> : currentPage === 'data' ? <DataPage /> : (
+      {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'data' ? <DataPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'music' ? <MusicPage sharedId={sharedId} onIdLoad={setSharedId} /> : (
       <div className="app">
       <header className="header">
         <h1 className="title">Normies Art Tools</h1>
