@@ -102,7 +102,7 @@ function drawMirror(ctx, grid, cw, mode) {
 
 // ── Component ─────────────────────────────────────────────
 
-export default function DataPage() {
+export default function DataPage({ sharedId, onIdLoad }) {
   const [inputId,    setInputId]    = useState('')
   const [normieId,   setNormieId]   = useState(null)
   const [grid,       setGrid]       = useState(null)
@@ -115,12 +115,8 @@ export default function DataPage() {
 
   const canvasRef = useRef(null)
 
-  async function loadNormie() {
-    const id = parseInt(inputId, 10)
-    if (isNaN(id) || id < 0 || id > 9999) {
-      setError('Please enter a valid token ID between 0 and 9999.')
-      return
-    }
+  async function loadNormieById(id) {
+    setInputId(String(id))
     setLoading(true)
     setError(null)
     setGrid(null)
@@ -134,12 +130,27 @@ export default function DataPage() {
       if (raw.length < 1600) throw new Error(`Pixel data unavailable for #${id}`)
       setGrid(parseGrid(raw.slice(0, 1600)))
       setNormieId(id)
+      onIdLoad?.(id)
     } catch (err) {
       setError(err.message || 'Something went wrong.')
     } finally {
       setLoading(false)
     }
   }
+
+  async function loadNormie() {
+    const id = parseInt(inputId, 10)
+    if (isNaN(id) || id < 0 || id > 9999) {
+      setError('Please enter a valid token ID between 0 and 9999.')
+      return
+    }
+    await loadNormieById(id)
+  }
+
+  // Auto-load when another page set a new sharedId
+  useEffect(() => {
+    if (sharedId !== null && sharedId !== normieId) loadNormieById(sharedId)
+  }, [sharedId])
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') loadNormie()

@@ -75,6 +75,7 @@ function VersionThumb({ v, idx, svgText, cw, active, onClick }) {
 function App() {
   const [currentPage, setCurrentPage] = useState('explore')
   const [menuOpen, setMenuOpen]       = useState(false)
+  const [sharedId, setSharedId]       = useState(null)
 
   function navigate(page) {
     setCurrentPage(page)
@@ -259,13 +260,7 @@ function App() {
     }
   }
 
-  async function loadNormie() {
-    const id = parseInt(inputId, 10)
-    if (isNaN(id) || id < 0 || id > 9999) {
-      setError('Please enter a valid token ID between 0 and 9999.')
-      setNormie(null)
-      return
-    }
+  async function loadNormieById(id) {
     setLoading(true)
     setError(null)
     setNormie(null)
@@ -274,7 +269,6 @@ function App() {
     setActiveVersionIdx(null)
     setVersionSvgTexts({})
     setPlaying(false)
-
     try {
       const res = await fetch(`${API_BASE}/normie/${id}/metadata`)
       if (!res.ok) throw new Error(`Token #${id} not found (${res.status})`)
@@ -282,14 +276,32 @@ function App() {
       console.log(`[normie #${id}] /metadata raw:`, data)
       const traits = data.attributes ?? data
       console.log(`[normie #${id}] traits (${traits.length}):`, traits)
-
       setNormie({ id, traits })
+      setSharedId(id)
     } catch (err) {
       setError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
   }
+
+  async function loadNormie() {
+    const id = parseInt(inputId, 10)
+    if (isNaN(id) || id < 0 || id > 9999) {
+      setError('Please enter a valid token ID between 0 and 9999.')
+      setNormie(null)
+      return
+    }
+    await loadNormieById(id)
+  }
+
+  // Auto-load on Explore when another page set a new sharedId
+  useEffect(() => {
+    if (currentPage === 'explore' && sharedId !== null && sharedId !== normie?.id) {
+      setInputId(String(sharedId))
+      loadNormieById(sharedId)
+    }
+  }, [sharedId, currentPage])
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') loadNormie()
@@ -325,7 +337,7 @@ function App() {
         </div>
       )}
 
-      {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage /> : currentPage === 'data' ? <DataPage /> : (
+      {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'data' ? <DataPage sharedId={sharedId} onIdLoad={setSharedId} /> : (
       <div className="app">
       <header className="header">
         <h1 className="title">Normies Art Tools</h1>
