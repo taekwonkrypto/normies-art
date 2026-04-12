@@ -8,7 +8,7 @@
   padding: 48px 16px 80px;
 }
 
-/* ── Meta row (bpm + tags) ───────────────────────────────── */
+/* ── Meta row (waveform + tags) ──────────────────────────── */
 
 .music-meta {
   display: flex;
@@ -17,15 +17,6 @@
   margin-bottom: 16px;
   flex-wrap: wrap;
   justify-content: center;
-}
-
-.music-bpm {
-  font-family: "Courier New", monospace;
-  font-size: 0.85rem;
-  letter-spacing: 0.12em;
-  color: var(--fg);
-  opacity: 0.65;
-  text-transform: uppercase;
 }
 
 .music-tag {
@@ -44,10 +35,88 @@
 .music-controls {
   display: flex;
   gap: 8px;
-  margin-bottom: 16px;
+  align-items: center;
+  margin-bottom: 10px;
 }
 
-/* ── Piano roll ──────────────────────────────────────────── */
+/* BPM nudge buttons */
+.bpm-nudge {
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.25);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.7rem;
+  padding: 0.25rem 0.45rem;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.15s;
+}
+.bpm-nudge:hover { opacity: 1; }
+
+/* ── Swing bar ───────────────────────────────────────────── */
+
+.music-swing-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 14px;
+}
+
+.swing-label {
+  font-family: "Courier New", monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.5;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.swing-val {
+  font-family: "Courier New", monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  opacity: 0.55;
+  width: 2.8rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.swing-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 2px;
+  background: rgba(var(--fg-rgb), 0.2);
+  border-radius: 1px;
+  outline: none;
+  cursor: pointer;
+}
+.swing-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fg);
+  opacity: 0.75;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.swing-slider::-webkit-slider-thumb:hover { opacity: 1; }
+.swing-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fg);
+  opacity: 0.75;
+  border: none;
+  cursor: pointer;
+}
+
+/* ── Unified piano roll (melody + drum rows) ─────────────── */
 
 .piano-roll-wrap {
   width: 100%;
@@ -64,30 +133,6 @@
 }
 
 .piano-roll-canvas {
-  display: block;
-  width: 100%;
-  max-width: 680px;
-  height: auto;
-  cursor: crosshair;
-}
-
-/* ── Drum grid ───────────────────────────────────────────── */
-
-.drum-roll-wrap {
-  width: 100%;
-  max-width: 680px;
-  border: 1px solid rgba(var(--fg-rgb), 0.15);
-  line-height: 0;
-  margin-bottom: 14px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.drum-roll-wrap::-webkit-scrollbar {
-  display: none;
-}
-
-.drum-roll-canvas {
   display: block;
   width: 100%;
   max-width: 680px;
