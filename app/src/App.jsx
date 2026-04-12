@@ -4,6 +4,7 @@ import { shareOrDownload } from './share'
 import FusionPage from './FusionPage'
 import AnimatePage from './AnimatePage'
 import DataPage from './DataPage'
+import MusicPage from './MusicPage'
 import './App.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -260,7 +261,7 @@ function App() {
     }
   }
 
-  async function loadNormieById(id) {
+  async function loadById(id) {
     setLoading(true)
     setError(null)
     setNormie(null)
@@ -292,16 +293,15 @@ function App() {
       setNormie(null)
       return
     }
-    await loadNormieById(id)
+    await loadById(id)
   }
 
-  // Auto-load on Explore when another page set a new sharedId
+  // Auto-load when another page sets a new sharedId
   useEffect(() => {
-    if (currentPage === 'explore' && sharedId !== null && sharedId !== normie?.id) {
-      setInputId(String(sharedId))
-      loadNormieById(sharedId)
-    }
-  }, [sharedId, currentPage])
+    if (sharedId === null || normie?.id === sharedId) return
+    setInputId(String(sharedId))
+    loadById(sharedId)
+  }, [sharedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') loadNormie()
@@ -317,6 +317,7 @@ function App() {
           <button className={`nav-link${currentPage === 'explore' ? ' active' : ''}`} onClick={() => navigate('explore')}>Explore</button>
           <button className={`nav-link${currentPage === 'animate' ? ' active' : ''}`} onClick={() => navigate('animate')}>Animate</button>
           <button className={`nav-link${currentPage === 'data'    ? ' active' : ''}`} onClick={() => navigate('data')}>Data</button>
+          <button className={`nav-link${currentPage === 'music'   ? ' active' : ''}`} onClick={() => navigate('music')}>Music</button>
           <button className={`nav-link${currentPage === 'create'  ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
         </div>
         <button
@@ -333,11 +334,12 @@ function App() {
           <button className={`mobile-nav-link${currentPage === 'explore' ? ' active' : ''}`} onClick={() => navigate('explore')}>Explore</button>
           <button className={`mobile-nav-link${currentPage === 'animate' ? ' active' : ''}`} onClick={() => navigate('animate')}>Animate</button>
           <button className={`mobile-nav-link${currentPage === 'data'    ? ' active' : ''}`} onClick={() => navigate('data')}>Data</button>
+          <button className={`mobile-nav-link${currentPage === 'music'   ? ' active' : ''}`} onClick={() => navigate('music')}>Music</button>
           <button className={`mobile-nav-link${currentPage === 'create'  ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
         </div>
       )}
 
-      {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'data' ? <DataPage sharedId={sharedId} onIdLoad={setSharedId} /> : (
+      {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'data' ? <DataPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'music' ? <MusicPage sharedId={sharedId} onIdLoad={setSharedId} /> : (
       <div className="app">
       <header className="header">
         <h1 className="title">Normies Art Tools</h1>

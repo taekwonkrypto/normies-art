@@ -49,7 +49,7 @@ function drawPixels(ctx, grid, cw) {
     }
 }
 
-export default function AnimatePage({ sharedId, onIdLoad }) {
+export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
   const [inputId,   setInputId]   = useState('')
   const [normieId,  setNormieId]  = useState(null)
   const [grid,      setGrid]      = useState(null)
@@ -61,8 +61,7 @@ export default function AnimatePage({ sharedId, onIdLoad }) {
 
   const canvasRef = useRef(null)
 
-  async function loadNormieById(id) {
-    setInputId(String(id))
+  async function loadById(id) {
     setLoading(true)
     setError(null)
     setGrid(null)
@@ -90,17 +89,20 @@ export default function AnimatePage({ sharedId, onIdLoad }) {
       setError('Please enter a valid token ID between 0 and 9999.')
       return
     }
-    await loadNormieById(id)
+    await loadById(id)
   }
 
-  // Auto-load when another page set a new sharedId
-  useEffect(() => {
-    if (sharedId !== null && sharedId !== normieId) loadNormieById(sharedId)
-  }, [sharedId])
 
   function handleKeyDown(e) {
     if (e.key === 'Enter') loadNormie()
   }
+
+  // Auto-load when sharedId changes from another page
+  useEffect(() => {
+    if (sharedId === null || sharedId === normieId) return
+    setInputId(String(sharedId))
+    loadById(sharedId)
+  }, [sharedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function downloadGif() {
     const canvas = canvasRef.current

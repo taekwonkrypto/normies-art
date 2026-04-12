@@ -1,0 +1,151 @@
+/* ── Music page ──────────────────────────────────────────── */
+
+.music-page {
+  min-height: calc(100vh - 52px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 16px 80px;
+}
+
+/* ── Meta row (bpm + tags) ───────────────────────────────── */
+
+.music-meta {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.music-bpm {
+  font-family: "Courier New", monospace;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  color: var(--fg);
+  opacity: 0.65;
+  text-transform: uppercase;
+}
+
+.music-tag {
+  border: 1px solid rgba(var(--fg-rgb), 0.25);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0.15rem 0.5rem;
+  opacity: 0.6;
+}
+
+/* ── Playback controls ───────────────────────────────────── */
+
+.music-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+/* ── Piano roll ──────────────────────────────────────────── */
+
+.piano-roll-wrap {
+  width: 100%;
+  max-width: 680px;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  line-height: 0;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.piano-roll-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+.piano-roll-canvas {
+  display: block;
+  width: 100%;
+  max-width: 680px;
+  height: auto;
+  cursor: crosshair;
+}
+
+/* ── Drum grid ───────────────────────────────────────────── */
+
+.drum-roll-wrap {
+  width: 100%;
+  max-width: 680px;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  line-height: 0;
+  margin-bottom: 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.drum-roll-wrap::-webkit-scrollbar {
+  display: none;
+}
+
+.drum-roll-canvas {
+  display: block;
+  width: 100%;
+  max-width: 680px;
+  height: auto;
+  cursor: crosshair;
+}
+
+/* ── Visualizer controls + canvas ────────────────────────── */
+
+.music-viz-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 10px;
+}
+
+.music-viz-btns {
+  display: flex;
+  gap: 6px;
+}
+
+.music-hint {
+  font-family: "Courier New", monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.3;
+  margin-left: auto;
+}
+
+.viz-canvas-wrap {
+  width: 100%;
+  max-width: 680px;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  line-height: 0;
+  margin-bottom: 24px;
+}
+
+.music-viz-canvas {
+  display: block;
+  width: 100%;
+  max-width: 680px;
+  height: auto;
+}
+
+/* ── Bottom panel ────────────────────────────────────────── */
+
+.music-panel {
+  width: 100%;
+  max-width: 680px;
+}
+
+/* ── Mobile ──────────────────────────────────────────────── */
+
+@media (max-width: 540px) {
+  .piano-roll-canvas {
+    min-width: 480px;
+  }
+}
