@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import GIF from 'gif.js'
 import './AnimatePage.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -55,6 +56,7 @@ export default function AnimatePage() {
   const [error,     setError]     = useState(null)
   const [animation, setAnimation] = useState('STATIC')
   const [colorway,  setColorway]  = useState('original')
+  const [gifState,  setGifState]  = useState(null) // null | 'recording' | 'encoding'
 
   const canvasRef = useRef(null)
 
@@ -88,22 +90,68 @@ export default function AnimatePage() {
     if (e.key === 'Enter') loadNormie()
   }
 
-  function downloadPng() {
+  async function downloadGif() {
     const canvas = canvasRef.current
-    if (!canvas || normieId === null) return
-    const out = document.createElement('canvas')
-    out.width = 1200
-    out.height = 1200
-    const octx = out.getContext('2d')
-    octx.imageSmoothingEnabled = false
-    octx.drawImage(canvas, 0, 0, 1200, 1200)
-    out.toBlob(blob => {
-      const a = document.createElement('a')
-      a.href = URL.createObjectURL(blob)
-      a.download = `normie-${normieId}-${animation.toLowerCase()}.png`
-      a.click()
-      URL.revokeObjectURL(a.href)
-    }, 'image/png')
+    if (!canvas || normieId === null || gifState !== null) return
+
+    const FPS        = 15
+    const FRAME_MS   = Math.round(1000 / FPS)
+    const DURATIONS  = {
+      STATIC:       1000,
+      GLITCH:       3000,
+      BREATHE:      3000,
+      RAIN:         4500,
+      SCANLINE:     3600,
+      DISINTEGRATE: 3500,
+    }
+    const duration    = DURATIONS[animation] ?? 3000
+    const totalFrames = Math.max(2, Math.ceil(duration / FRAME_MS))
+    const OUT         = 600
+
+    setGifState('recording')
+    try {
+      const gif = new GIF({
+        workers: 2,
+        quality: 10,
+        width:   OUT,
+        height:  OUT,
+        workerScript: '/gif.worker.js',
+        repeat: 0,
+      })
+
+      // Capture live frames from the running animation canvas
+      await new Promise(resolve => {
+        let count = 0
+        const interval = setInterval(() => {
+          const frame = document.createElement('canvas')
+          frame.width  = OUT
+          frame.height = OUT
+          const fCtx = frame.getContext('2d')
+          fCtx.imageSmoothingEnabled = false
+          fCtx.drawImage(canvas, 0, 0, OUT, OUT)
+          gif.addFrame(frame, { delay: FRAME_MS, copy: true })
+          if (++count >= totalFrames) { clearInterval(interval); resolve() }
+        }, FRAME_MS)
+      })
+
+      setGifState('encoding')
+      await new Promise((resolve, reject) => {
+        gif.on('finished', blob => {
+          const a = document.createElement('a')
+          a.href = URL.createObjectURL(blob)
+          a.download = `normie-${normieId}-${animation.toLowerCase()}.gif`
+          a.click()
+          URL.revokeObjectURL(a.href)
+          resolve()
+        })
+        gif.on('abort', () => reject(new Error('GIF aborted')))
+        gif.render()
+      })
+    } catch (err) {
+      console.error('GIF export failed:', err)
+    } finally {
+      setGifState(null)
+    }
   }
 
   // Animation loop — re-runs whenever grid, animation, or colorway changes
@@ -496,10 +544,10 @@ export default function AnimatePage() {
           </div>
           <button
             className="download-btn"
-            onClick={downloadPng}
-            disabled={normieId === null}
+            onClick={downloadGif}
+            disabled={normieId === null || gifState !== null}
           >
-            Download PNG
+            {gifState === 'recording' ? 'Recording…' : gifState === 'encoding' ? 'Encoding…' : 'Download GIF'}
           </button>
         </div>
       )}
