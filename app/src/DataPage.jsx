@@ -21,6 +21,28 @@ const COLORWAYS = [
 const VIZ_NAMES   = ['CONSTELLATION', 'WAVEFORM', 'HEATMAP', 'FINGERPRINT', 'MIRROR']
 const MIRROR_MODES = ['HORIZONTAL', 'VERTICAL', 'QUAD', 'KALEIDOSCOPE']
 
+const VIZ_DESCRIPTIONS = {
+  CONSTELLATION:
+    'Each ON pixel becomes a node plotted at its canvas position. Edges connect any two nodes within 30 pixels of each other — line opacity scales with proximity, so near neighbors read as stronger bonds. The structure maps the pixel density as a living circuit graph.',
+  WAVEFORM:
+    'Each of the 40 rows is collapsed to a single amplitude: its ON pixel count. Those values are smoothed with a 5-point moving average, then reflected symmetrically above and below the center axis — the Normie rendered as its own audio signature.',
+  HEATMAP:
+    'A 3×3 sampling window sweeps every cell in the grid, counting active neighbors to produce a local density score from 0 to 9. That score is linearly interpolated between the background and foreground colors, surfacing the mass distribution as a thermal signature.',
+  FINGERPRINT:
+    'The ON pixel count of each row maps directly to a ring radius, ranging from 5 to 195 pixels. All 40 rings are drawn from outermost inward, their irregular spacing encoding the row-by-row density profile. The pattern is deterministic and unique to every token.',
+}
+
+const MIRROR_DESCRIPTIONS = {
+  HORIZONTAL:
+    'The left 20 columns are preserved as source. The right half is discarded and rebuilt as their mirror image across the vertical axis — bilateral symmetry derived directly from the pixel data.',
+  VERTICAL:
+    'The top 20 rows form the source. The bottom half is discarded and rebuilt as their reflection across the horizontal axis, producing vertical symmetry from a single half of the original grid.',
+  QUAD:
+    'Both axes fold simultaneously. The top-left quadrant becomes the sole source, reflected horizontally, vertically, and diagonally to fill all four corners — fourfold symmetry from one corner of the grid.',
+  KALEIDOSCOPE:
+    "Each pixel's distance from center is decomposed into its principal and tangential components, then folded into a single 45° wedge. That octant tiles outward through eight reflections, collapsing the full grid into a radial mandala.",
+}
+
 // ── Helpers ───────────────────────────────────────────────
 
 function hexRgb(hex) {
@@ -362,6 +384,11 @@ export default function DataPage() {
           ))}
         </div>
       )}
+
+      {/* Visualization description */}
+      <p className="viz-description">
+        {viz === 'MIRROR' ? MIRROR_DESCRIPTIONS[mirrorMode] : VIZ_DESCRIPTIONS[viz]}
+      </p>
 
       {/* Colorways + download */}
       {grid && (

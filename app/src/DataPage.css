@@ -100,6 +100,19 @@
   opacity: 1;
 }
 
+.viz-description {
+  width: 400px;
+  max-width: 100%;
+  font-family: "Courier New", monospace;
+  font-size: 0.7rem;
+  line-height: 1.7;
+  letter-spacing: 0.03em;
+  color: var(--fg);
+  opacity: 0.45;
+  text-align: center;
+  margin: 0 0 20px;
+}
+
 .data-panel {
   width: 100%;
   max-width: 480px;
