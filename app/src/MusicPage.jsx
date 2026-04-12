@@ -159,6 +159,8 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
   const [colorway,    setColorway]    = useState('original')
   const [exporting,   setExporting]   = useState(false)
   const [audioReady,  setAudioReady]  = useState(false)
+  const [bpm,         setBpm]         = useState(120)
+  const [bpmDraft,    setBpmDraft]    = useState('120')
 
   const pianoRollRef   = useRef(null)
   const vizCanvasRef   = useRef(null)
@@ -171,11 +173,13 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
   const loopingRef     = useRef(false)
   const audioParamsRef = useRef(null)
   const localGridRef   = useRef(null)
+  const bpmRef         = useRef(120)
 
   useEffect(() => { playingRef.current     = playing },    [playing])
   useEffect(() => { loopingRef.current     = looping },    [looping])
   useEffect(() => { audioParamsRef.current = audioParams }, [audioParams])
   useEffect(() => { localGridRef.current   = localGrid },  [localGrid])
+  useEffect(() => { bpmRef.current         = bpm },        [bpm])
 
   // ── AudioContext setup (lazy — requires user gesture) ──────────────────
   function ensureAudioCtx() {
@@ -249,8 +253,6 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
     const ctx = ensureAudioCtx()
     const params = audioParamsRef.current
     if (!params) return
-    const beatMs  = 60000 / params.bpm
-    const noteDur = (60 / params.bpm) * 0.8
     let beat = 0
 
     function tick() {
@@ -259,6 +261,9 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
         if (loopingRef.current) beat = 0
         else { setPlaying(false); setCurrentBeat(-1); return }
       }
+      const currentBpm = bpmRef.current
+      const beatMs  = 60000 / currentBpm
+      const noteDur = (60 / currentBpm) * 0.8
       setCurrentBeat(beat)
       playColumn(ctx, beat, ctx.currentTime, noteDur, params)
       beat++
@@ -460,8 +465,11 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
         traitData = td.attributes ?? td
       }
 
+      const params = getAudioParams(traitData)
       setLocalGrid(parsedGrid)
-      setAudioParams(getAudioParams(traitData))
+      setAudioParams(params)
+      setBpm(params.bpm)
+      setBpmDraft(String(params.bpm))
       setNormieId(id)
       onIdLoad?.(id)
     } catch (err) {
@@ -494,7 +502,7 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
     setExporting(true)
     try {
       const params  = audioParams
-      const beatDur = 60 / params.bpm
+      const beatDur = 60 / bpmRef.current
       const noteDur = beatDur * 0.8
       const SR = 44100
       const offCtx = new OfflineAudioContext(
@@ -589,7 +597,6 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
 
       {audioParams && (
         <div className="music-meta">
-          <span className="music-bpm">{audioParams.bpm} BPM</span>
           <span className="music-tag">{audioParams.waveform}</span>
           {audioParams.hasReverb  && <span className="music-tag">reverb</span>}
           {audioParams.hasDetune  && <span className="music-tag">chorus</span>}
@@ -601,6 +608,23 @@ export default function MusicPage({ sharedId = null, onIdLoad } = {}) {
       {localGrid && (
         <>
           <div className="music-controls">
+            <div className="delay-control">
+              <input
+                type="text"
+                inputMode="numeric"
+                className="delay-input"
+                value={bpmDraft}
+                onChange={e => setBpmDraft(e.target.value)}
+                onBlur={() => {
+                  const n = parseInt(bpmDraft, 10)
+                  const clamped = isNaN(n) ? bpm : Math.max(20, Math.min(300, n))
+                  setBpm(clamped)
+                  setBpmDraft(String(clamped))
+                }}
+                onKeyDown={e => { if (e.key === 'Enter') e.target.blur() }}
+              />
+              <span className="delay-unit">BPM</span>
+            </div>
             <button
               className={`play-btn${playing ? ' active' : ''}`}
               onClick={handlePlayStop}
