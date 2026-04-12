@@ -67,49 +67,73 @@ export default function FusionPage() {
   const canvasRef = useRef(null)
   const abortRef  = useRef(null)
 
+  // Check one ID against the target type; returns { id, pixels } or null
+  async function checkOne(id, type, signal) {
+    try {
+      const res = await fetch(`${API_BASE}/normie/${id}/metadata`, { signal })
+      if (!res.ok) return null
+      const data = await res.json()
+      if (data.error) return null
+
+      const attrs = data.attributes ?? data
+      let normieType = null
+      if (Array.isArray(attrs)) {
+        normieType = attrs.find(t => t.trait_type?.toLowerCase() === 'type')?.value
+      } else {
+        normieType = attrs['Type'] ?? attrs['type']
+      }
+      if (normieType?.toUpperCase() !== type) return null
+
+      const pixRes = await fetch(`${API_BASE}/normie/${id}/pixels`, { signal })
+      if (!pixRes.ok) return null
+      const raw = (await pixRes.text()).trim()
+      if (raw.length < 1600) return null
+
+      return { id, pixels: raw.slice(0, 1600) }
+    } catch (err) {
+      if (err.name === 'AbortError') throw err
+      return null
+    }
+  }
+
   async function fetchCandidates(type) {
     if (abortRef.current) abortRef.current.abort()
-    const controller  = new AbortController()
-    abortRef.current  = controller
+    const controller = new AbortController()
+    abortRef.current = controller
 
     setLoadingCandidates(true)
     setCandidates([])
     setLoadingProgress(0)
 
-    const found  = []
-    const tried  = new Set()
+    const found = []
+    const tried = new Set()
+
+    function nextId() {
+      let id
+      do { id = Math.floor(Math.random() * 10000) } while (tried.has(id))
+      tried.add(id)
+      return id
+    }
 
     try {
+      // Check 4 IDs concurrently, keep refilling until we have 4 matches
       while (found.length < 4 && !controller.signal.aborted) {
-        let id
-        do { id = Math.floor(Math.random() * 10000) } while (tried.has(id))
-        tried.add(id)
-
-        try {
-          const res = await fetch(`${API_BASE}/normie/${id}/traits`, { signal: controller.signal })
-          if (!res.ok) continue
-
-          const data = await res.json()
-          let normieType = null
-          if (Array.isArray(data)) {
-            normieType = data.find(t => t.trait_type?.toLowerCase() === 'type')?.value
-          } else {
-            normieType = data['Type'] ?? data['type']
+        const batch = Array.from({ length: 4 }, nextId)
+        const results = await Promise.allSettled(
+          batch.map(id => checkOne(id, type, controller.signal))
+        )
+        for (const r of results) {
+          if (controller.signal.aborted) break
+          if (r.status === 'fulfilled' && r.value) {
+            found.push(r.value)
+            setLoadingProgress(found.length)
+            setCandidates([...found])
+            if (found.length >= 4) break
           }
-          if (normieType?.toUpperCase() !== type) continue
-
-          const pixRes = await fetch(`${API_BASE}/normie/${id}/pixels`, { signal: controller.signal })
-          if (!pixRes.ok) continue
-          const raw    = (await pixRes.text()).trim()
-          if (raw.length < 1600) continue
-
-          found.push({ id, pixels: raw.slice(0, 1600) })
-          setLoadingProgress(found.length)
-          setCandidates([...found])
-        } catch (err) {
-          if (err.name === 'AbortError') break
         }
       }
+    } catch (err) {
+      if (err.name !== 'AbortError') console.error('fetchCandidates:', err)
     } finally {
       if (!controller.signal.aborted) setLoadingCandidates(false)
     }
