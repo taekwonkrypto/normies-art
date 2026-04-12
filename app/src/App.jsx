@@ -85,6 +85,7 @@ function App() {
   const [versionSvgTexts, setVersionSvgTexts] = useState({})
   const [playing, setPlaying]                 = useState(false)
   const [frameDelay, setFrameDelay]           = useState(1500)
+  const [delayDraft, setDelayDraft]           = useState('1500')
   const [downloadingGif, setDownloadingGif]   = useState(false)
   const playIntervalRef                       = useRef(null)
 
@@ -388,13 +389,20 @@ function App() {
                   <div className="version-controls">
                     <div className="delay-control">
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         className="delay-input"
-                        min="100"
-                        max="5000"
-                        step="100"
-                        value={frameDelay}
-                        onChange={e => setFrameDelay(Math.max(100, Number(e.target.value)))}
+                        value={delayDraft}
+                        onChange={e => setDelayDraft(e.target.value)}
+                        onBlur={() => {
+                          const n = parseInt(delayDraft, 10)
+                          const clamped = isNaN(n) ? frameDelay : Math.max(100, Math.min(9999, n))
+                          setFrameDelay(clamped)
+                          setDelayDraft(String(clamped))
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') e.target.blur()
+                        }}
                       />
                       <span className="delay-unit">ms</span>
                     </div>
