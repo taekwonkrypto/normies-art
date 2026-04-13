@@ -243,6 +243,39 @@
   opacity: 1;
 }
 
+/* ── Color mode toggle ── */
+
+.corrupted-color-mode {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 14px;
+}
+
+.corrupted-mode-btn {
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.22);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.corrupted-mode-btn:hover {
+  opacity: 0.8;
+}
+
+.corrupted-mode-btn.active {
+  border-color: var(--fg);
+  background: rgba(var(--fg-rgb), 0.1);
+  opacity: 1;
+}
+
 /* ── Seed row ── */
 
 .corrupted-seed-row {

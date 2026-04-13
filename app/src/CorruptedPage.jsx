@@ -67,16 +67,18 @@ function cloneGrid(grid) {
 // ── Effects ───────────────────────────────────────────────────────────────────
 // Each function mutates `grid` in place. buildOutput clones first.
 
-function fxBitRot(grid, intensity, seed) {
+function fxBitRot(grid, intensity, seed, pal) {
   const t = intensity * 0.35
   for (let r = 0; r < GRID; r++)
     for (let c = 0; c < GRID; c++)
       if (srand(seed, r, c) < t)
-        grid[r][c] = [
-          Math.floor(srand(seed + 1, r, c) * 255),
-          Math.floor(srand(seed + 2, r, c) * 255),
-          Math.floor(srand(seed + 3, r, c) * 255),
-        ]
+        grid[r][c] = pal
+          ? (srand(seed + 4, r, c) < 0.5 ? [...pal[0]] : [...pal[1]])
+          : [
+              Math.floor(srand(seed + 1, r, c) * 255),
+              Math.floor(srand(seed + 2, r, c) * 255),
+              Math.floor(srand(seed + 3, r, c) * 255),
+            ]
 }
 
 function fxRowShift(grid, intensity, seed) {
@@ -92,15 +94,17 @@ function fxRowShift(grid, intensity, seed) {
   }
 }
 
-function fxScanCorrupt(grid, intensity, seed) {
+function fxScanCorrupt(grid, intensity, seed, pal) {
   const count = Math.max(1, Math.floor(intensity * GRID * 0.35))
   for (let i = 0; i < count; i++) {
     const r     = Math.floor(srand(seed, i, 55) * GRID)
-    const color = [
-      Math.floor(srand(seed, i, 56) * 255),
-      Math.floor(srand(seed, i, 57) * 255),
-      Math.floor(srand(seed, i, 58) * 255),
-    ]
+    const color = pal
+      ? (srand(seed, i, 61) < 0.5 ? [...pal[0]] : [...pal[1]])
+      : [
+          Math.floor(srand(seed, i, 56) * 255),
+          Math.floor(srand(seed, i, 57) * 255),
+          Math.floor(srand(seed, i, 58) * 255),
+        ]
     const c0 = Math.floor(srand(seed, i, 59) * GRID * 0.3)
     const c1 = Math.min(GRID, c0 + Math.floor(srand(seed, i, 60) * GRID * 0.8) + Math.floor(GRID * 0.15))
     for (let c = c0; c < c1; c++) grid[r][c] = [...color]
@@ -117,14 +121,14 @@ function fxPixelBleed(grid, intensity, seed) {
       }
 }
 
-function fxDataLoss(grid, intensity, seed) {
+function fxDataLoss(grid, intensity, seed, pal) {
   const zones = Math.max(1, Math.floor(intensity * 5))
   for (let z = 0; z < zones; z++) {
     const r0    = Math.floor(srand(seed, z, 300) * GRID)
     const c0    = Math.floor(srand(seed, z, 301) * GRID)
     const h     = Math.max(1, Math.floor(srand(seed, z, 302) * intensity * GRID * 0.45))
     const w     = Math.max(2, Math.floor(srand(seed, z, 303) * GRID * 0.55))
-    const color = srand(seed, z, 304) < 0.5 ? [0, 0, 0] : [255, 255, 255]
+    const color = pal ? [...pal[1]] : (srand(seed, z, 304) < 0.5 ? [0, 0, 0] : [255, 255, 255])
     for (let r = r0; r < Math.min(r0 + h, GRID); r++)
       for (let cc = c0; cc < Math.min(c0 + w, GRID); cc++)
         grid[r][cc] = [...color]
@@ -144,22 +148,23 @@ function fxVerticalTear(grid, intensity, seed) {
   }
 }
 
-function fxEdgeDecay(grid, intensity, seed) {
+function fxEdgeDecay(grid, intensity, seed, pal) {
   const depth = Math.max(1, Math.floor(intensity * 8))
+  const fill  = pal ? [...pal[1]] : [0, 0, 0]
   for (let d = 0; d < depth; d++) {
     const chance = (1 - d / depth) * intensity
     for (let c = 0; c < GRID; c++) {
-      if (srand(seed, d, c + 500) < chance)          grid[d][c]        = [0, 0, 0]
-      if (srand(seed, d + GRID, c + 500) < chance)   grid[GRID-1-d][c] = [0, 0, 0]
+      if (srand(seed, d, c + 500) < chance)          grid[d][c]        = [...fill]
+      if (srand(seed, d + GRID, c + 500) < chance)   grid[GRID-1-d][c] = [...fill]
     }
     for (let r = 0; r < GRID; r++) {
-      if (srand(seed, r + 600, d) < chance)           grid[r][d]        = [0, 0, 0]
-      if (srand(seed, r + 700, d) < chance)           grid[r][GRID-1-d] = [0, 0, 0]
+      if (srand(seed, r + 600, d) < chance)           grid[r][d]        = [...fill]
+      if (srand(seed, r + 700, d) < chance)           grid[r][GRID-1-d] = [...fill]
     }
   }
 }
 
-function fxInversionZones(grid, intensity, seed) {
+function fxInversionZones(grid, intensity, seed, pal) {
   const zones = Math.max(1, Math.floor(intensity * 4) + 1)
   for (let z = 0; z < zones; z++) {
     const r0 = Math.floor(srand(seed, z, 800) * GRID)
@@ -168,8 +173,15 @@ function fxInversionZones(grid, intensity, seed) {
     const w  = Math.max(2, Math.floor(srand(seed, z, 803) * GRID * 0.5))
     for (let r = r0; r < Math.min(r0 + h, GRID); r++)
       for (let c = c0; c < Math.min(c0 + w, GRID); c++) {
-        const [rv, gv, bv] = grid[r][c]
-        grid[r][c] = [255 - rv, 255 - gv, 255 - bv]
+        if (pal) {
+          const [rv, gv, bv] = grid[r][c]
+          const dOn = Math.abs(rv - pal[0][0]) + Math.abs(gv - pal[0][1]) + Math.abs(bv - pal[0][2])
+          const dOf = Math.abs(rv - pal[1][0]) + Math.abs(gv - pal[1][1]) + Math.abs(bv - pal[1][2])
+          grid[r][c] = dOn < dOf ? [...pal[1]] : [...pal[0]]
+        } else {
+          const [rv, gv, bv] = grid[r][c]
+          grid[r][c] = [255 - rv, 255 - gv, 255 - bv]
+        }
       }
   }
 }
@@ -186,10 +198,10 @@ const FX_FNS   = {
   inversionzones: fxInversionZones,
 }
 
-function buildOutput(baseGrid, activeEffects, intensity, seed) {
+function buildOutput(baseGrid, activeEffects, intensity, seed, pal) {
   const grid = cloneGrid(baseGrid)
   for (const id of FX_ORDER)
-    if (activeEffects.has(id)) FX_FNS[id](grid, intensity, seed)
+    if (activeEffects.has(id)) FX_FNS[id](grid, intensity, seed, pal)
   return grid
 }
 
@@ -254,6 +266,7 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
   const [seedOffset, setSeedOffset] = useState(0)
   const [status,     setStatus]     = useState('')
   const [exporting,  setExporting]  = useState(false)
+  const [noColor,    setNoColor]    = useState(false)
 
   const canvasRef     = useRef(null)
   const rafRef        = useRef(null)
@@ -265,6 +278,7 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
   const seedOffsetRef = useRef(0)
   const normieIdRef   = useRef(null)
   const colorwayRef   = useRef('original')
+  const noColorRef    = useRef(false)
   const svgTextRef    = useRef(null)
 
   // ── Core ──────────────────────────────────────────────────────────────────
@@ -275,12 +289,18 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
     baseGridRef.current = boolToRgb(boolGridRef.current, cw)
   }
 
+  function getPal() {
+    if (!noColorRef.current) return null
+    const cw = COLORWAYS.find(c => c.id === colorwayRef.current) || COLORWAYS[0]
+    return [hexToRgb(cw.on), hexToRgb(cw.off)]
+  }
+
   function redraw(animate) {
     if (!baseGridRef.current || !canvasRef.current) return
     const seed    = (normieIdRef.current ?? 0) + seedOffsetRef.current
     const canvas  = canvasRef.current
     const ctx     = canvas.getContext('2d')
-    const outGrid = buildOutput(baseGridRef.current, effectsRef.current, intensityRef.current, seed)
+    const outGrid = buildOutput(baseGridRef.current, effectsRef.current, intensityRef.current, seed, getPal())
     const n       = effectsRef.current.size
     const txt     = n ? `${n} effect${n > 1 ? 's' : ''} active` : 'clean'
 
@@ -395,6 +415,12 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
     redraw(false)
   }
 
+  function handleColorMode(val) {
+    noColorRef.current = val
+    setNoColor(val)
+    redraw(true)
+  }
+
   // ── Draw on normie load ────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -417,7 +443,7 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
     setExporting(true)
     try {
       const seed = normieIdRef.current + seedOffsetRef.current
-      const out  = buildOutput(baseGridRef.current, effectsRef.current, intensityRef.current, seed)
+      const out  = buildOutput(baseGridRef.current, effectsRef.current, intensityRef.current, seed, getPal())
       const dl   = document.createElement('canvas')
       dl.width   = GRID * DL_CELL
       dl.height  = GRID * DL_CELL
@@ -529,6 +555,17 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
                 {cw.label}
               </button>
             ))}
+          </div>
+
+          <div className="corrupted-color-mode">
+            <button
+              className={`corrupted-mode-btn${!noColor ? ' active' : ''}`}
+              onClick={() => handleColorMode(false)}
+            >Color</button>
+            <button
+              className={`corrupted-mode-btn${noColor ? ' active' : ''}`}
+              onClick={() => handleColorMode(true)}
+            >No Color</button>
           </div>
 
           <div className="corrupted-seed-row">
