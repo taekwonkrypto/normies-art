@@ -5,6 +5,7 @@ import FusionPage from './FusionPage'
 import AnimatePage from './AnimatePage'
 import DataPage from './DataPage'
 import MusicPage from './MusicPage'
+import CorruptedPage from './CorruptedPage'
 import './App.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -317,8 +318,9 @@ function App() {
           <button className={`nav-link${currentPage === 'explore' ? ' active' : ''}`} onClick={() => navigate('explore')}>Explore</button>
           <button className={`nav-link${currentPage === 'animate' ? ' active' : ''}`} onClick={() => navigate('animate')}>Animate</button>
           <button className={`nav-link${currentPage === 'data'    ? ' active' : ''}`} onClick={() => navigate('data')}>Data</button>
-          <button className={`nav-link${currentPage === 'music'   ? ' active' : ''}`} onClick={() => navigate('music')}>Music</button>
-          <button className={`nav-link${currentPage === 'create'  ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
+          <button className={`nav-link${currentPage === 'music'     ? ' active' : ''}`} onClick={() => navigate('music')}>Music</button>
+          <button className={`nav-link${currentPage === 'corrupted'? ' active' : ''}`} onClick={() => navigate('corrupted')}>Corrupted</button>
+          <button className={`nav-link${currentPage === 'create'   ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
         </div>
         <button
           className={`hamburger${menuOpen ? ' open' : ''}`}
@@ -334,12 +336,13 @@ function App() {
           <button className={`mobile-nav-link${currentPage === 'explore' ? ' active' : ''}`} onClick={() => navigate('explore')}>Explore</button>
           <button className={`mobile-nav-link${currentPage === 'animate' ? ' active' : ''}`} onClick={() => navigate('animate')}>Animate</button>
           <button className={`mobile-nav-link${currentPage === 'data'    ? ' active' : ''}`} onClick={() => navigate('data')}>Data</button>
-          <button className={`mobile-nav-link${currentPage === 'music'   ? ' active' : ''}`} onClick={() => navigate('music')}>Music</button>
-          <button className={`mobile-nav-link${currentPage === 'create'  ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
+          <button className={`mobile-nav-link${currentPage === 'music'     ? ' active' : ''}`} onClick={() => navigate('music')}>Music</button>
+          <button className={`mobile-nav-link${currentPage === 'corrupted'? ' active' : ''}`} onClick={() => navigate('corrupted')}>Corrupted</button>
+          <button className={`mobile-nav-link${currentPage === 'create'   ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
         </div>
       )}
 
-      {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'data' ? <DataPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'music' ? <MusicPage sharedId={sharedId} onIdLoad={setSharedId} /> : (
+      {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'data' ? <DataPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'music' ? <MusicPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'corrupted' ? <CorruptedPage sharedId={sharedId} onIdLoad={setSharedId} /> : (
       <div className="app">
       <header className="header">
         <h1 className="title">Normies Art Tools</h1>
