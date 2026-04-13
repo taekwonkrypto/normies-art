@@ -1,0 +1,386 @@
+/* ── Layout ── */
+
+.corrupted-page {
+  min-height: calc(100vh - 52px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 16px 80px;
+}
+
+/* ── Input row ── */
+
+.corrupted-input-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 24px;
+}
+
+.corrupted-token-input {
+  flex: 1;
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.3);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.6rem;
+  outline: none;
+  -moz-appearance: textfield;
+}
+
+.corrupted-token-input::-webkit-outer-spin-button,
+.corrupted-token-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
+
+.corrupted-token-input::placeholder {
+  opacity: 0.4;
+}
+
+.corrupted-load-btn {
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.3);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.8rem;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.corrupted-load-btn:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.corrupted-load-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.corrupted-error {
+  font-family: "Courier New", monospace;
+  font-size: 0.7rem;
+  color: #dc143c;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 0 12px;
+}
+
+/* ── Normie info ── */
+
+.corrupted-normie-info {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 20px;
+}
+
+.corrupted-thumb {
+  width: 80px;
+  height: 80px;
+  image-rendering: pixelated;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  flex-shrink: 0;
+}
+
+.corrupted-normie-details {
+  flex: 1;
+}
+
+.corrupted-normie-name {
+  font-family: "Courier New", monospace;
+  font-size: 1rem;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  opacity: 0.9;
+}
+
+.corrupted-trait-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.corrupted-trait-pill {
+  font-family: "Courier New", monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border: 1px solid rgba(var(--fg-rgb), 0.25);
+  padding: 0.1rem 0.4rem;
+  opacity: 0.6;
+}
+
+/* ── Intensity bar ── */
+
+.corrupted-intensity-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 16px;
+}
+
+.corrupted-label {
+  font-family: "Courier New", monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.corrupted-val {
+  font-family: "Courier New", monospace;
+  font-size: 0.6rem;
+  opacity: 0.5;
+  width: 3rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.corrupted-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 2px;
+  background: rgba(var(--fg-rgb), 0.2);
+  border-radius: 1px;
+  outline: none;
+  cursor: pointer;
+}
+
+.corrupted-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fg);
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.corrupted-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fg);
+  opacity: 0.7;
+  border: none;
+  cursor: pointer;
+}
+
+/* ── Effect toggles ── */
+
+.corrupted-effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 14px;
+}
+
+.corrupted-fx-btn {
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.22);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.corrupted-fx-btn:hover {
+  opacity: 0.8;
+}
+
+.corrupted-fx-btn.active {
+  border-color: var(--fg);
+  background: rgba(var(--fg-rgb), 0.1);
+  opacity: 1;
+}
+
+/* ── Colorways ── */
+
+.corrupted-colorways {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 14px;
+}
+
+.corrupted-cw-btn {
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.18);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.5rem;
+  cursor: pointer;
+  opacity: 0.45;
+}
+
+.corrupted-cw-btn:hover {
+  opacity: 0.75;
+}
+
+.corrupted-cw-btn.active {
+  border-color: var(--fg);
+  opacity: 1;
+}
+
+/* ── Color mode toggle ── */
+
+.corrupted-color-mode {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 14px;
+}
+
+.corrupted-mode-btn {
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.22);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 0.65rem;
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.corrupted-mode-btn:hover {
+  opacity: 0.8;
+}
+
+.corrupted-mode-btn.active {
+  border-color: var(--fg);
+  background: rgba(var(--fg-rgb), 0.1);
+  opacity: 1;
+}
+
+/* ── Seed row ── */
+
+.corrupted-seed-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 680px;
+  margin-bottom: 16px;
+}
+
+.corrupted-action-btn {
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.25);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.corrupted-action-btn:hover {
+  opacity: 1;
+}
+
+.corrupted-status {
+  font-family: "Courier New", monospace;
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.3;
+  flex: 1;
+  text-align: center;
+}
+
+/* ── Canvas ── */
+
+.corrupted-canvas-wrap {
+  width: 100%;
+  max-width: 680px;
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  line-height: 0;
+  margin-bottom: 20px;
+}
+
+.corrupted-canvas {
+  display: block;
+  width: 100%;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ── Download ── */
+
+.corrupted-download-btn {
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.3);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.5rem 1.2rem;
+  cursor: pointer;
+  opacity: 0.6;
+}
+
+.corrupted-download-btn:hover:not(:disabled) {
+  opacity: 1;
+}
+
+.corrupted-download-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* ── Mobile ── */
+
+@media (max-width: 540px) {
+  .corrupted-thumb {
+    width: 60px;
+    height: 60px;
+  }
+
+  .corrupted-effects {
+    gap: 4px;
+  }
+
+  .corrupted-fx-btn {
+    font-size: 0.52rem;
+    padding: 0.25rem 0.45rem;
+  }
+
+  .corrupted-seed-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .corrupted-status {
+    order: 3;
+    flex-basis: 100%;
+    text-align: left;
+  }
+}
