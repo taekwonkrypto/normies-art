@@ -485,6 +485,11 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
   return (
     <div className="corrupted-page">
 
+      <header className="header">
+        <h1 className="title">Corrupted</h1>
+        <p className="subtitle">Apply seeded glitch effects to a Normie's pixel art</p>
+      </header>
+
       <div className="corrupted-input-row">
         <input
           className="corrupted-token-input"
