@@ -490,19 +490,19 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
         <p className="subtitle">Apply seeded glitch effects to a Normie's pixel art</p>
       </header>
 
-      <div className="corrupted-input-row">
+      <div className="input-row">
         <input
-          className="corrupted-token-input"
+          className="token-input"
           type="number"
           min="0"
           max="9999"
-          placeholder="Token ID"
+          placeholder="Token ID (0–9999)"
           value={inputId}
           onChange={e => setInputId(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleLoad()}
         />
-        <button className="corrupted-load-btn" onClick={handleLoad} disabled={loading}>
-          {loading ? '...' : 'Load'}
+        <button className="load-btn" onClick={handleLoad} disabled={loading}>
+          {loading ? 'Loading…' : 'Load Normie'}
         </button>
       </div>
 
