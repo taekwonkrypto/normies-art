@@ -349,6 +349,13 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
       svgTextRef.current  = svgText
       rebuildBase(colorwayRef.current)
 
+      // Randomly enable 2–4 effects on each load
+      const count   = 2 + Math.floor(Math.random() * 3)
+      const shuffled = [...EFFECTS].sort(() => Math.random() - 0.5)
+      const picked   = new Set(shuffled.slice(0, count).map(fx => fx.id))
+      effectsRef.current = picked
+      setEffects(new Set(picked))
+
       const attrs = meta.attributes ?? meta
       setNormieData({ id, traits: attrs })
       onIdLoad?.(id)
@@ -487,7 +494,7 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
 
       <header className="header">
         <h1 className="title">Corrupted</h1>
-        <p className="subtitle">Apply seeded glitch effects to a Normie's pixel art</p>
+        <p className="subtitle">Load a Normie, then scroll down to adjust corruptness</p>
       </header>
 
       <div className="input-row">
@@ -522,6 +529,15 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
                 ))}
               </div>
             </div>
+          </div>
+
+          <div className="corrupted-canvas-wrap">
+            <canvas
+              ref={canvasRef}
+              className="corrupted-canvas"
+              width={GRID * CELL}
+              height={GRID * CELL}
+            />
           </div>
 
           <div className="corrupted-intensity-bar">
@@ -581,15 +597,6 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
             <button className="corrupted-action-btn" onClick={handleReset}>
               Reset All
             </button>
-          </div>
-
-          <div className="corrupted-canvas-wrap">
-            <canvas
-              ref={canvasRef}
-              className="corrupted-canvas"
-              width={GRID * CELL}
-              height={GRID * CELL}
-            />
           </div>
 
           <button
