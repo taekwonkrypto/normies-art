@@ -319,7 +319,7 @@
 
 .corrupted-canvas-wrap {
   width: 100%;
-  max-width: 680px;
+  max-width: 408px;
   border: 1px solid rgba(var(--fg-rgb), 0.15);
   line-height: 0;
   margin-bottom: 20px;
