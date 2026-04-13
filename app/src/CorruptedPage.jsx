@@ -266,7 +266,7 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
   const [seedOffset, setSeedOffset] = useState(0)
   const [status,     setStatus]     = useState('')
   const [exporting,  setExporting]  = useState(false)
-  const [noColor,    setNoColor]    = useState(false)
+  const [noColor,    setNoColor]    = useState(true)
 
   const canvasRef     = useRef(null)
   const rafRef        = useRef(null)
@@ -278,7 +278,7 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
   const seedOffsetRef = useRef(0)
   const normieIdRef   = useRef(null)
   const colorwayRef   = useRef('original')
-  const noColorRef    = useRef(false)
+  const noColorRef    = useRef(true)
   const svgTextRef    = useRef(null)
 
   // ── Core ──────────────────────────────────────────────────────────────────
@@ -564,13 +564,13 @@ export default function CorruptedPage({ sharedId, onIdLoad }) {
 
           <div className="corrupted-color-mode">
             <button
-              className={`corrupted-mode-btn${!noColor ? ' active' : ''}`}
-              onClick={() => handleColorMode(false)}
-            >Color</button>
-            <button
               className={`corrupted-mode-btn${noColor ? ' active' : ''}`}
               onClick={() => handleColorMode(true)}
             >No Color</button>
+            <button
+              className={`corrupted-mode-btn${!noColor ? ' active' : ''}`}
+              onClick={() => handleColorMode(false)}
+            >Color</button>
           </div>
 
           <div className="corrupted-seed-row">
