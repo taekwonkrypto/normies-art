@@ -608,9 +608,8 @@
   font-size: 0.7rem;
   text-transform: lowercase;
   letter-spacing: 0.08em;
-  color: var(--fg);
+  color: rgb(72, 73, 75);
   opacity: 0.35;
   border-top: 1px solid rgba(var(--fg-rgb), 0.1);
   margin-top: auto;
-  background-color: rgb(72, 73, 75);
 }
