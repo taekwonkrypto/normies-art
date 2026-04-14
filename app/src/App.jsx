@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import GIF from 'gif.js'
 import { shareOrDownload } from './share'
 import FusionPage from './FusionPage'
@@ -504,6 +505,7 @@ function App() {
       )}
     </div>
       )}
+      <Analytics />
     </>
   )
 }
