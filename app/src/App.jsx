@@ -368,6 +368,7 @@ function App() {
 
       {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'data' ? <DataPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'music' ? <MusicPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'corrupted' ? <CorruptedPage sharedId={sharedId} onIdLoad={setSharedId} /> : (
       <div className="app">
+
       <header className="header">
         <h1 className="title">Normies Art Tools</h1>
         <p className="subtitle">Enter a Normie token ID to get started</p>
@@ -504,6 +505,10 @@ function App() {
       )}
     </div>
       )}
+
+      <footer className="site-footer">
+        like the tools? you can always send ETH or Normies to taekwonkrypto.eth
+      </footer>
     </>
   )
 }

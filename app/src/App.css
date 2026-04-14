@@ -597,3 +597,19 @@
   font-family: "Courier New", monospace;
   color: var(--fg);
 }
+
+/* ── Site footer ────────────────────────────────────────── */
+
+.site-footer {
+  width: 100%;
+  text-align: center;
+  padding: 20px 16px;
+  font-family: "Courier New", monospace;
+  font-size: 0.7rem;
+  text-transform: lowercase;
+  letter-spacing: 0.08em;
+  color: var(--fg);
+  opacity: 0.35;
+  border-top: 1px solid rgba(var(--fg-rgb), 0.1);
+  margin-top: auto;
+}
