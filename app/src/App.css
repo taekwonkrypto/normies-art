@@ -116,6 +116,73 @@
   .mobile-menu { display: flex; }
 }
 
+.topbar-x {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--fg);
+  opacity: 0.45;
+  text-decoration: none;
+  transition: opacity 0.15s;
+  padding: 4px;
+  flex-shrink: 0;
+}
+
+.topbar-x:hover {
+  opacity: 1;
+}
+
+.topbar-x .x-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+/* ── Social corner (fixed bottom-left) ──────────────────── */
+
+.social-corner {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg);
+  text-decoration: none;
+  font-family: "Courier New", monospace;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  opacity: 0.35;
+  border: 1px solid rgba(var(--fg-rgb), 0.2);
+  padding: 6px 10px 6px 8px;
+  background: var(--bg);
+  transition: opacity 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.social-corner:hover {
+  opacity: 1;
+  border-color: var(--fg);
+  transform: translateY(-2px);
+}
+
+.social-corner .x-icon {
+  width: 13px;
+  height: 13px;
+  display: block;
+  flex-shrink: 0;
+}
+
+.social-corner-handle {
+  white-space: nowrap;
+}
+
+@media (max-width: 540px) {
+  .social-corner-handle { display: none; }
+  .social-corner { padding: 7px; }
+}
+
 /* ── Explore page ───────────────────────────────────────── */
 
 .app {

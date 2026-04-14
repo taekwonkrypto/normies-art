@@ -322,6 +322,17 @@ function App() {
           <button className={`nav-link${currentPage === 'corrupted'? ' active' : ''}`} onClick={() => navigate('corrupted')}>Corrupted</button>
           <button className={`nav-link${currentPage === 'create'   ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
         </div>
+        <a
+          className="topbar-x"
+          href="https://x.com/taekwonkrypto"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="@taekwonkrypto on X"
+        >
+          <svg className="x-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L2.252 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+          </svg>
+        </a>
         <button
           className={`hamburger${menuOpen ? ' open' : ''}`}
           onClick={() => setMenuOpen(o => !o)}
@@ -341,6 +352,19 @@ function App() {
           <button className={`mobile-nav-link${currentPage === 'create'   ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
         </div>
       )}
+
+      <a
+        className="social-corner"
+        href="https://x.com/taekwonkrypto"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="@taekwonkrypto on X"
+      >
+        <svg className="x-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L2.252 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+        </svg>
+        <span className="social-corner-handle">@taekwonkrypto</span>
+      </a>
 
       {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'data' ? <DataPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'music' ? <MusicPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'corrupted' ? <CorruptedPage sharedId={sharedId} onIdLoad={setSharedId} /> : (
       <div className="app">
