@@ -612,4 +612,5 @@
   opacity: 0.35;
   border-top: 1px solid rgba(var(--fg-rgb), 0.1);
   margin-top: auto;
+  background-color: rgb(72, 73, 75);
 }
