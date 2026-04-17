@@ -1,0 +1,180 @@
+.slot-page {
+  min-height: calc(100vh - 52px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 16px 80px;
+  gap: 28px;
+}
+
+/* ── ID inputs ─────────────────────────────── */
+
+.slot-inputs {
+  display: flex;
+  gap: 12px;
+}
+
+.slot-input-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.slot-input-label {
+  font-family: "Courier New", monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--fg);
+  opacity: 0.45;
+}
+
+.slot-id-input {
+  width: 90px;
+  background: transparent;
+  border: 1px solid rgba(var(--fg-rgb), 0.2);
+  color: var(--fg);
+  font-family: "Courier New", monospace;
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+  -moz-appearance: textfield;
+}
+
+.slot-id-input:focus {
+  border-color: rgba(var(--fg-rgb), 0.5);
+}
+
+.slot-id-input::placeholder {
+  opacity: 0.3;
+  font-style: italic;
+}
+
+.slot-id-input::-webkit-outer-spin-button,
+.slot-id-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.slot-id-input:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Machine housing ───────────────────────── */
+
+.slot-machine {
+  display: flex;
+  gap: 3px;
+  background: var(--fg);
+  padding: 3px;
+}
+
+.slot-reel {
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.25s ease;
+}
+
+.slot-reel.reel-idle {
+  opacity: 0.4;
+}
+
+.slot-reel.reel-locked {
+  box-shadow:
+    0 0 0 2px #ffd700,
+    0 0 18px rgba(255, 215, 0, 0.45);
+}
+
+.slot-reel.reel-bounce {
+  animation: reelBounce 0.52s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes reelBounce {
+  0%   { transform: translateY(0) }
+  18%  { transform: translateY(10px) }
+  40%  { transform: translateY(-6px) }
+  62%  { transform: translateY(3px) }
+  78%  { transform: translateY(-2px) }
+  100% { transform: translateY(0) }
+}
+
+.slot-canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* White flash on lock */
+.reel-flash {
+  position: absolute;
+  inset: 0;
+  background: white;
+  pointer-events: none;
+  animation: reelFlash 0.45s ease-out forwards;
+}
+
+@keyframes reelFlash {
+  0%   { opacity: 0.9 }
+  100% { opacity: 0 }
+}
+
+/* ID badge that appears after lock */
+.reel-id-tag {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 215, 0, 0.88);
+  color: #1a1200;
+  font-family: "Courier New", monospace;
+  font-size: 0.6rem;
+  font-weight: bold;
+  text-align: center;
+  padding: 3px 0 4px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* ── Buttons ───────────────────────────────── */
+
+.slot-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.slot-roll-btn {
+  background: var(--fg);
+  border: 1px solid var(--fg);
+  color: var(--bg);
+  font-family: "Share Tech Mono", "Courier New", monospace;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  padding: 12px 56px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.slot-roll-btn:hover:not(:disabled) {
+  opacity: 0.75;
+}
+
+.slot-roll-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 540px) {
+  .slot-machine {
+    transform: scale(0.85);
+    transform-origin: top center;
+  }
+
+  .slot-roll-btn {
+    padding: 10px 36px;
+    font-size: 0.95rem;
+  }
+}
