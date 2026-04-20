@@ -1,0 +1,35 @@
+/* ── Gifs page ───────────────────────────────────────────── */
+
+.gifs-page {
+  min-height: calc(100vh - 52px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 16px 80px;
+}
+
+.gifs-effect-label {
+  font-family: "Courier New", monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--fg);
+  opacity: 0.5;
+  margin-bottom: 10px;
+}
+
+.gifs-canvas-wrap {
+  border: 1px solid rgba(var(--fg-rgb), 0.15);
+  line-height: 0;
+  margin-bottom: 16px;
+}
+
+.gifs-canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+.gifs-panel {
+  width: 100%;
+  max-width: 480px;
+}

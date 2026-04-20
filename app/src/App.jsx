@@ -7,6 +7,7 @@ import DataPage from './DataPage'
 import MusicPage from './MusicPage'
 import CorruptedPage from './CorruptedPage'
 import SlotPage from './SlotPage'
+import GifsPage from './GifsPage'
 import './App.css'
 
 const API_BASE = 'https://api.normies.art'
@@ -323,6 +324,7 @@ function App() {
           <button className={`nav-link${currentPage === 'corrupted'? ' active' : ''}`} onClick={() => navigate('corrupted')}>Corrupted</button>
           <button className={`nav-link${currentPage === 'create'   ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
           <button className={`nav-link${currentPage === 'slots'   ? ' active' : ''}`} onClick={() => navigate('slots')}>Slots</button>
+          <button className={`nav-link${currentPage === 'gifs'    ? ' active' : ''}`} onClick={() => navigate('gifs')}>Gifs</button>
         </div>
         <a
           className="topbar-x"
@@ -353,6 +355,7 @@ function App() {
           <button className={`mobile-nav-link${currentPage === 'corrupted'? ' active' : ''}`} onClick={() => navigate('corrupted')}>Corrupted</button>
           <button className={`mobile-nav-link${currentPage === 'create'   ? ' active' : ''}`} onClick={() => navigate('create')}>Create</button>
           <button className={`mobile-nav-link${currentPage === 'slots'   ? ' active' : ''}`} onClick={() => navigate('slots')}>Slots</button>
+          <button className={`mobile-nav-link${currentPage === 'gifs'    ? ' active' : ''}`} onClick={() => navigate('gifs')}>Gifs</button>
         </div>
       )}
 
@@ -369,7 +372,7 @@ function App() {
         <span className="social-corner-handle">@taekwonkrypto</span>
       </a>
 
-      {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'data' ? <DataPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'music' ? <MusicPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'corrupted' ? <CorruptedPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'slots' ? <SlotPage sharedId={sharedId} onIdLoad={setSharedId} /> : (
+      {currentPage === 'create' ? <FusionPage /> : currentPage === 'animate' ? <AnimatePage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'data' ? <DataPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'music' ? <MusicPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'corrupted' ? <CorruptedPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'slots' ? <SlotPage sharedId={sharedId} onIdLoad={setSharedId} /> : currentPage === 'gifs' ? <GifsPage sharedId={sharedId} onIdLoad={setSharedId} /> : (
       <div className="app">
 
       <header className="header">
