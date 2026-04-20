@@ -1,16 +1,17 @@
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+
 /**
- * On iOS Safari, navigator.share() with files routes through the native share
- * sheet, which offers "Save Image" → Photos. Falls back to standard <a> download
- * on desktop or unsupported browsers.
+ * On mobile, uses the native share sheet (iOS "Save to Photos", Android save).
+ * On desktop, triggers a straight-to-Downloads file save.
  */
 export async function shareOrDownload(blob, filename) {
   const file = new File([blob], filename, { type: blob.type })
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+  if (isMobile && navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
       await navigator.share({ files: [file] })
       return
     } catch (err) {
-      if (err.name === 'AbortError') return // user dismissed — do nothing
+      if (err.name === 'AbortError') return
       // other error: fall through to regular download
     }
   }
