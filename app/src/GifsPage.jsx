@@ -8,17 +8,8 @@ const GRID = 40
 const CELL = 10
 const SIZE = 400
 
-const COLORWAYS = [
-  { id: 'original',  label: 'Original',  on: '#48494b', off: '#e3e5e4' },
-  { id: 'invert',    label: 'Invert',    on: '#e3e5e4', off: '#48494b' },
-  { id: 'matrix',    label: 'Matrix',    on: '#00ff41', off: '#0d0d0d' },
-  { id: 'sunset',    label: 'Sunset',    on: '#ff6b35', off: '#1a0a00' },
-  { id: 'arctic',    label: 'Arctic',    on: '#a8d8ea', off: '#1c2b3a' },
-  { id: 'gold',      label: 'Gold',      on: '#ffd700', off: '#1a1200' },
-  { id: 'crimson',   label: 'Crimson',   on: '#dc143c', off: '#0f0000' },
-  { id: 'vaporwave', label: 'Vaporwave', on: '#ff71ce', off: '#01cdfe' },
-  { id: 'ghost',     label: 'Ghost',     on: '#ffffff', off: '#111111' },
-]
+const CW_ORIGINAL = { on: '#48494b', off: '#e3e5e4' }
+const CW_GHOST    = { on: '#ffffff', off: '#111111' }
 
 const GOLD_COLORS = ['#FFD700', '#FFC200', '#FFCC00', '#F0A500', '#E8C000', '#FFB300', '#FFCA28']
 
@@ -54,13 +45,19 @@ function spawnParticle() {
   }
 }
 
+const EFFECTS = [
+  { id: 'celebration',   label: 'Celebration' },
+  { id: 'chromatic-rip', label: 'Chromatic Rip' },
+]
+
 export default function GifsPage({ sharedId = null, onIdLoad } = {}) {
   const [inputId,  setInputId]  = useState('')
   const [normieId, setNormieId] = useState(null)
   const [grid,     setGrid]     = useState(null)
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState(null)
-  const [colorway, setColorway] = useState('original')
+  const [effect,       setEffect]       = useState('celebration')
+  const [effectPicked, setEffectPicked] = useState(false)
   const [gifState, setGifState] = useState(null)
 
   const canvasRef = useRef(null)
@@ -70,7 +67,6 @@ export default function GifsPage({ sharedId = null, onIdLoad } = {}) {
     setError(null)
     setGrid(null)
     setNormieId(null)
-    setColorway('original')
     try {
       const res = await fetch(`${API_BASE}/normie/${id}/pixels`)
       if (!res.ok) throw new Error(`Token #${id} not found (${res.status})`)
@@ -109,57 +105,153 @@ export default function GifsPage({ sharedId = null, onIdLoad } = {}) {
     const canvas = canvasRef.current
     if (!canvas) return
     const ctx = canvas.getContext('2d')
-    const cw = COLORWAYS.find(c => c.id === colorway)
+    const cwOriginal = CW_ORIGINAL
+    const cwGhost    = CW_GHOST
     let rafId = null
 
     if (!grid) {
-      ctx.fillStyle = cw.off
+      ctx.fillStyle = cwOriginal.off
       ctx.fillRect(0, 0, SIZE, SIZE)
       return
     }
 
-    const particles = []
+    if (!effectPicked) {
+      drawPixels(ctx, grid, cwOriginal)
+      return
+    }
 
-    function frameCelebration() {
-      drawPixels(ctx, grid, cw)
+    if (effect === 'celebration') {
+      const particles = []
 
-      // Spawn 2-4 particles per frame
-      const count = Math.floor(Math.random() * 3) + 2
-      for (let i = 0; i < count; i++) {
-        if (Math.random() < 0.8) particles.push(spawnParticle())
-      }
+      function frameCelebration() {
+        drawPixels(ctx, grid, cwOriginal)
 
-      for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i]
-        p.vy += 0.05
-        p.x  += p.vx
-        p.y  += p.vy
-        p.rotation += p.rotationSpeed
-
-        if (p.y > SIZE * 0.72) {
-          p.alpha = Math.max(0, 1 - (p.y - SIZE * 0.72) / (SIZE * 0.28))
+        const count = Math.floor(Math.random() * 3) + 2
+        for (let i = 0; i < count; i++) {
+          if (Math.random() < 0.8) particles.push(spawnParticle())
         }
 
-        if (p.y > SIZE + 10 || p.alpha <= 0) {
-          particles.splice(i, 1)
-          continue
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i]
+          p.vy += 0.05
+          p.x  += p.vx
+          p.y  += p.vy
+          p.rotation += p.rotationSpeed
+
+          if (p.y > SIZE * 0.72) {
+            p.alpha = Math.max(0, 1 - (p.y - SIZE * 0.72) / (SIZE * 0.28))
+          }
+
+          if (p.y > SIZE + 10 || p.alpha <= 0) {
+            particles.splice(i, 1)
+            continue
+          }
+
+          ctx.save()
+          ctx.globalAlpha = p.alpha
+          ctx.fillStyle   = p.color
+          ctx.translate(p.x, p.y)
+          ctx.rotate(p.rotation)
+          ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size)
+          ctx.restore()
         }
 
-        ctx.save()
-        ctx.globalAlpha = p.alpha
-        ctx.fillStyle   = p.color
-        ctx.translate(p.x, p.y)
-        ctx.rotate(p.rotation)
-        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size)
-        ctx.restore()
+        rafId = requestAnimationFrame(frameCelebration)
       }
 
       rafId = requestAnimationFrame(frameCelebration)
+
+    } else if (effect === 'chromatic-rip') {
+      // idle → scramble → rgb → flash → idle → … alternating Original↔Ghost
+      let phase      = 'idle'
+      let timer      = 0
+      let idleTarget = Math.floor(Math.random() * 60) + 50
+      let rowShifts  = {}
+      let rgbOffset  = 10
+      let flashAlpha = 0
+      let fromCw     = cwOriginal
+      let toCw       = cwGhost
+
+      function frameGlitch() {
+        timer++
+
+        if (phase === 'idle') {
+          drawPixels(ctx, grid, fromCw)
+          if (timer >= idleTarget) {
+            phase = 'scramble'
+            timer = 0
+            rowShifts = {}
+            const numRows = Math.floor(Math.random() * 7) + 3
+            for (let i = 0; i < numRows; i++) {
+              const row = Math.floor(Math.random() * GRID)
+              rowShifts[row] = (Math.random() < 0.5 ? -1 : 1) * (Math.floor(Math.random() * 6) + 2)
+            }
+          }
+
+        } else if (phase === 'scramble') {
+          for (let y = 0; y < GRID; y++) {
+            const shift = rowShifts[y] || 0
+            for (let x = 0; x < GRID; x++) {
+              const srcX = ((x - shift) % GRID + GRID) % GRID
+              ctx.fillStyle = grid[y][srcX] ? fromCw.on : fromCw.off
+              ctx.fillRect(x * CELL, y * CELL, CELL, CELL)
+            }
+          }
+          if (timer >= 10) {
+            phase = 'rgb'
+            timer = 0
+            rgbOffset = Math.floor(Math.random() * 8) + 8
+          }
+
+        } else if (phase === 'rgb') {
+          ctx.fillStyle = fromCw.off
+          ctx.fillRect(0, 0, SIZE, SIZE)
+
+          for (let y = 0; y < GRID; y++) {
+            for (let x = 0; x < GRID; x++) {
+              if (!grid[y][x]) continue
+              ctx.fillStyle = 'rgba(255, 20, 50, 0.95)'
+              ctx.fillRect(x * CELL - rgbOffset, y * CELL, CELL, CELL)
+            }
+          }
+
+          for (let y = 0; y < GRID; y++) {
+            for (let x = 0; x < GRID; x++) {
+              if (!grid[y][x]) continue
+              ctx.fillStyle = 'rgba(20, 80, 255, 0.95)'
+              ctx.fillRect(x * CELL + rgbOffset, y * CELL, CELL, CELL)
+            }
+          }
+
+          if (timer >= 8) {
+            phase = 'flash'
+            timer = 0
+            flashAlpha = 0.95
+          }
+
+        } else if (phase === 'flash') {
+          drawPixels(ctx, grid, toCw)
+          ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`
+          ctx.fillRect(0, 0, SIZE, SIZE)
+          flashAlpha -= 0.11
+          if (flashAlpha <= 0) {
+            const prev = fromCw
+            fromCw = toCw
+            toCw   = prev
+            phase  = 'idle'
+            timer  = 0
+            idleTarget = Math.floor(Math.random() * 60) + 50
+          }
+        }
+
+        rafId = requestAnimationFrame(frameGlitch)
+      }
+
+      rafId = requestAnimationFrame(frameGlitch)
     }
 
-    rafId = requestAnimationFrame(frameCelebration)
     return () => { if (rafId !== null) cancelAnimationFrame(rafId) }
-  }, [grid, colorway])
+  }, [grid, effect, effectPicked])
 
   async function downloadGif() {
     const canvas = canvasRef.current
@@ -199,7 +291,8 @@ export default function GifsPage({ sharedId = null, onIdLoad } = {}) {
       setGifState('encoding')
       await new Promise((resolve, reject) => {
         gif.on('finished', async blob => {
-          await shareOrDownload(blob, `normie-${normieId}-celebration.gif`)
+          const effectLabel = EFFECTS.find(e => e.id === effect)?.label.toLowerCase().replace(/\s+/g, '-') ?? effect
+          await shareOrDownload(blob, `normie-${normieId}-${effectLabel}.gif`)
           resolve()
         })
         gif.on('abort', () => reject(new Error('GIF aborted')))
@@ -244,7 +337,9 @@ export default function GifsPage({ sharedId = null, onIdLoad } = {}) {
         </div>
       )}
 
-      <div className="gifs-effect-label">CELEBRATION</div>
+      <div className="gifs-effect-label">
+        {grid && !effectPicked ? 'SELECT AN EFFECT BELOW' : effectPicked ? EFFECTS.find(e => e.id === effect)?.label.toUpperCase() : ''}
+      </div>
 
       <div className="gifs-canvas-wrap">
         <canvas ref={canvasRef} width={SIZE} height={SIZE} className="gifs-canvas" />
@@ -252,15 +347,15 @@ export default function GifsPage({ sharedId = null, onIdLoad } = {}) {
 
       {grid && (
         <div className="effects-panel gifs-panel">
-          <span className="effects-label">Colorways</span>
+          <span className="effects-label">Effect</span>
           <div className="effects-row">
-            {COLORWAYS.map(cw => (
+            {EFFECTS.map(ef => (
               <button
-                key={cw.id}
-                className={`effect-btn${colorway === cw.id ? ' active' : ''}`}
-                onClick={() => setColorway(cw.id)}
+                key={ef.id}
+                className={`effect-btn${effect === ef.id ? ' active' : ''}`}
+                onClick={() => { setEffect(ef.id); setEffectPicked(true) }}
               >
-                {cw.label}
+                {ef.label}
               </button>
             ))}
           </div>
