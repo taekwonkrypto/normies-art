@@ -25,9 +25,9 @@ const ANIM_NAMES = ['STATIC', 'GLITCH', 'BREATHE', 'RAIN', 'SCANLINE', 'DISINTEG
 // 1=hand(gray)  2=outline(near-black)  3=highlight(near-white)  4=sleeve
 const HAND_COLORS = {
   1: '#c0c0c0',
-  2: '#1a1a1a',
+  2: '#333333',
   3: '#e8e8e8',
-  4: '#333333',
+  4: '#222222',
 }
 
 const HAND_WIDTH  = 10
