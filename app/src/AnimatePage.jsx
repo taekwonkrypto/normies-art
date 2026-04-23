@@ -22,12 +22,12 @@ const COLORWAYS = [
 
 const ANIM_NAMES = ['STATIC', 'GLITCH', 'BREATHE', 'RAIN', 'SCANLINE', 'DISINTEGRATE']
 
-// 1=hand(gray)  2=outline(near-black)  3=highlight(near-white)  4=sleeve(black)
+// 1=hand(gray)  2=outline(near-black)  3=highlight(near-white)  4=sleeve
 const HAND_COLORS = {
   1: '#c0c0c0',
   2: '#1a1a1a',
   3: '#e8e8e8',
-  4: '#000000',
+  4: '#333333',
 }
 
 const HAND_WIDTH  = 10
@@ -37,20 +37,20 @@ const HAND_Y_BASE = GRID - HAND_HEIGHT + 2  // row 24 — 2 cells below fully vi
 
 //              0  1  2  3  4  5  6  7  8  9
 const HAND_SHAPE = [
-  [0, 0, 0, 2, 2, 2, 2, 0, 0, 0],  //  0 fingertip (2-cell wide cap)
-  [0, 0, 0, 2, 3, 3, 2, 0, 0, 0],  //  1 nail
-  [0, 0, 0, 2, 3, 3, 2, 0, 0, 0],  //  2 nail
-  [0, 0, 0, 2, 1, 1, 2, 0, 0, 0],  //  3 finger
-  [0, 0, 0, 2, 1, 1, 2, 0, 0, 0],  //  4 finger
-  [0, 0, 2, 1, 1, 1, 1, 2, 0, 0],  //  5 knuckle widens
+  [0, 0, 0, 2, 2, 2, 0, 0, 0, 0],  //  0 fingertip (1-cell wide cap)
+  [0, 0, 0, 2, 3, 2, 0, 0, 0, 0],  //  1 nail
+  [0, 0, 0, 2, 3, 2, 0, 0, 0, 0],  //  2 nail
+  [0, 0, 0, 2, 1, 2, 0, 0, 0, 0],  //  3 finger
+  [0, 0, 0, 2, 1, 2, 0, 0, 0, 0],  //  4 finger
+  [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],  //  5 knuckle widens (right shifted in 1)
   [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  //  6 fist top
   [2, 3, 1, 1, 1, 1, 1, 1, 2, 0],  //  7 thumb nub — outline steps left, highlight inside
   [2, 3, 1, 1, 1, 1, 1, 1, 2, 0],  //  8 thumb nub
   [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  //  9 fist (thumb over)
   [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  // 10 fist bottom
-  [0, 0, 2, 1, 1, 1, 1, 2, 0, 0],  // 11 wrist — steps in 1 each side
-  [0, 0, 2, 1, 1, 1, 1, 2, 0, 0],  // 12 wrist
-  [0, 0, 4, 4, 4, 4, 4, 4, 0, 0],  // 13 sleeve at wrist width
+  [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],  // 11 wrist — right shifted in 1
+  [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],  // 12 wrist
+  [0, 0, 4, 4, 4, 4, 4, 0, 0, 0],  // 13 sleeve at wrist width
   [0, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 14 sleeve flares
   [4, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 15 sleeve full
   [4, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 16
