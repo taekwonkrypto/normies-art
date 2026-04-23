@@ -22,6 +22,39 @@ const COLORWAYS = [
 
 const ANIM_NAMES = ['STATIC', 'GLITCH', 'BREATHE', 'RAIN', 'SCANLINE', 'DISINTEGRATE']
 
+const HAND_OUTLINE = '#111111'
+const HAND_FILL    = '#3a3a3a'
+const HAND_X = 24
+const HAND_Y = 17
+
+// 0=transparent, 1=fill, 2=outline
+const HAND_SHAPE = [
+  [0, 0, 2, 2, 2, 0, 0],
+  [0, 2, 1, 1, 1, 2, 0],
+  [0, 2, 1, 1, 1, 2, 0],
+  [0, 2, 1, 1, 1, 2, 0],
+  [0, 2, 1, 1, 1, 2, 0],
+  [2, 2, 1, 1, 1, 2, 2],
+  [2, 1, 1, 1, 1, 1, 2],
+  [2, 1, 1, 1, 1, 1, 2],
+  [2, 1, 1, 1, 1, 1, 2],
+  [2, 1, 1, 1, 1, 1, 2],
+  [0, 2, 2, 2, 2, 2, 0],
+]
+
+function drawHandOverlay(canvas) {
+  const ctx = canvas.getContext('2d')
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  for (let row = 0; row < HAND_SHAPE.length; row++) {
+    for (let col = 0; col < HAND_SHAPE[row].length; col++) {
+      const v = HAND_SHAPE[row][col]
+      if (v === 0) continue
+      ctx.fillStyle = v === 2 ? HAND_OUTLINE : HAND_FILL
+      ctx.fillRect((HAND_X + col) * CELL, (HAND_Y + row) * CELL, CELL, CELL)
+    }
+  }
+}
+
 function rand(min, max) {
   return Math.random() * (max - min) + min
 }
@@ -58,8 +91,10 @@ export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
   const [animation, setAnimation] = useState('STATIC')
   const [colorway,  setColorway]  = useState('original')
   const [gifState,  setGifState]  = useState(null) // null | 'recording' | 'encoding'
+  const [showHand,  setShowHand]  = useState(false)
 
-  const canvasRef = useRef(null)
+  const canvasRef  = useRef(null)
+  const overlayRef = useRef(null)
 
   async function loadById(id) {
     setLoading(true)
@@ -103,6 +138,17 @@ export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
     loadById(sharedId)
   }, [sharedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Draw or clear the hand overlay canvas
+  useEffect(() => {
+    const canvas = overlayRef.current
+    if (!canvas) return
+    if (showHand) {
+      drawHandOverlay(canvas)
+    } else {
+      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+    }
+  }, [showHand])
+
   async function downloadGif() {
     const canvas = canvasRef.current
     if (!canvas || normieId === null || gifState !== null) return
@@ -142,6 +188,7 @@ export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
           const fCtx = frame.getContext('2d')
           fCtx.imageSmoothingEnabled = false
           fCtx.drawImage(canvas, 0, 0, OUT, OUT)
+          if (showHand && overlayRef.current) fCtx.drawImage(overlayRef.current, 0, 0, OUT, OUT)
           gif.addFrame(frame, { delay: FRAME_MS, copy: true })
           if (++count >= totalFrames) { clearInterval(interval); resolve() }
         }, FRAME_MS)
@@ -523,6 +570,7 @@ export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
 
       <div className="animate-canvas-wrap">
         <canvas ref={canvasRef} width={SIZE} height={SIZE} className="animate-canvas" />
+        <canvas ref={overlayRef} width={SIZE} height={SIZE} className="hand-overlay-canvas" />
       </div>
 
       <div className="anim-selector">
@@ -550,6 +598,14 @@ export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
                 {cw.label}
               </button>
             ))}
+          </div>
+          <div className="effects-row" style={{ marginTop: 8 }}>
+            <button
+              className={`effect-btn${showHand ? ' active' : ''}`}
+              onClick={() => setShowHand(v => !v)}
+            >
+              BIRD
+            </button>
           </div>
           <button
             className="download-btn"
