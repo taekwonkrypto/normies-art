@@ -37,24 +37,24 @@ const HAND_Y_BASE = GRID - HAND_HEIGHT + 2  // row 24 — 2 cells below fully vi
 
 //              0  1  2  3  4  5  6  7  8  9
 const HAND_SHAPE = [
-  [0, 0, 0, 2, 2, 2, 0, 0, 0, 0],  //  0 fingertip (1-cell wide cap)
+  [0, 0, 0, 2, 2, 2, 0, 0, 0, 0],  //  0 fingertip
   [0, 0, 0, 2, 3, 2, 0, 0, 0, 0],  //  1 nail
   [0, 0, 0, 2, 3, 2, 0, 0, 0, 0],  //  2 nail
   [0, 0, 0, 2, 1, 2, 0, 0, 0, 0],  //  3 finger
   [0, 0, 0, 2, 1, 2, 0, 0, 0, 0],  //  4 finger
-  [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],  //  5 knuckle widens (right shifted in 1)
+  [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],  //  5 knuckle
   [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  //  6 fist top
-  [2, 3, 1, 1, 1, 1, 1, 1, 2, 0],  //  7 thumb nub — outline steps left, highlight inside
-  [2, 3, 1, 1, 1, 1, 1, 1, 2, 0],  //  8 thumb nub
+  [0, 2, 1, 1, 1, 1, 1, 1, 3, 2],  //  7 thumb nub — outline steps right, highlight inside
+  [0, 2, 1, 1, 1, 1, 1, 1, 3, 2],  //  8 thumb nub
   [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  //  9 fist (thumb over)
   [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  // 10 fist bottom
-  [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],  // 11 wrist — right shifted in 1
+  [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],  // 11 wrist
   [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],  // 12 wrist
   [0, 0, 4, 4, 4, 4, 4, 0, 0, 0],  // 13 sleeve at wrist width
   [0, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 14 sleeve flares
-  [4, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 15 sleeve full
-  [4, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 16
-  [4, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 17 (no closing bottom)
+  [0, 4, 4, 4, 4, 4, 4, 4, 4, 4],  // 15 sleeve full
+  [0, 4, 4, 4, 4, 4, 4, 4, 4, 4],  // 16
+  [0, 4, 4, 4, 4, 4, 4, 4, 4, 4],  // 17 (no closing bottom)
 ]
 
 // yOffsetCells: 0 = base (2 rows clipped), -2 = fully visible
