@@ -30,30 +30,31 @@ const HAND_COLORS = {
   4: '#000000',
 }
 
-const HAND_WIDTH  = 9
-const HAND_HEIGHT = 17
-const HAND_X_COL  = GRID - HAND_WIDTH - 6   // col 25 — 6 left of right edge
-const HAND_Y_BASE = GRID - HAND_HEIGHT + 2  // row 25 — 2 cells below fully visible
+const HAND_WIDTH  = 10
+const HAND_HEIGHT = 18
+const HAND_X_COL  = GRID - HAND_WIDTH - 6   // col 24 — 6 left of right edge
+const HAND_Y_BASE = GRID - HAND_HEIGHT + 2  // row 24 — 2 cells below fully visible
 
-//              0  1  2  3  4  5  6  7  8
+//              0  1  2  3  4  5  6  7  8  9
 const HAND_SHAPE = [
-  [0, 0, 2, 2, 2, 0, 0, 0, 0],  //  0 fingertip
-  [0, 0, 2, 3, 2, 0, 0, 0, 0],  //  1 highlight
-  [0, 0, 2, 3, 2, 0, 0, 0, 0],  //  2 highlight
-  [0, 0, 2, 1, 2, 0, 0, 0, 0],  //  3 finger
-  [0, 0, 2, 1, 2, 0, 0, 0, 0],  //  4 finger
-  [0, 2, 1, 1, 1, 2, 0, 0, 0],  //  5 knuckle
-  [2, 3, 1, 1, 1, 1, 2, 0, 0],  //  6 fist top + thumb highlight
-  [2, 3, 1, 1, 1, 1, 1, 2, 0],  //  7 fist
-  [2, 1, 1, 1, 1, 1, 1, 2, 0],  //  8 fist
-  [2, 1, 1, 1, 1, 1, 1, 2, 0],  //  9 fist
-  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 10 sleeve (solid black, no outline)
-  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 11 sleeve
-  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 12 sleeve
-  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 13 sleeve
-  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 14 sleeve
-  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 15 sleeve
-  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 16 sleeve (no closing bottom)
+  [0, 0, 0, 2, 2, 2, 2, 0, 0, 0],  //  0 fingertip (2-cell wide cap)
+  [0, 0, 0, 2, 3, 3, 2, 0, 0, 0],  //  1 nail
+  [0, 0, 0, 2, 3, 3, 2, 0, 0, 0],  //  2 nail
+  [0, 0, 0, 2, 1, 1, 2, 0, 0, 0],  //  3 finger
+  [0, 0, 0, 2, 1, 1, 2, 0, 0, 0],  //  4 finger
+  [0, 0, 2, 1, 1, 1, 1, 2, 0, 0],  //  5 knuckle widens
+  [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  //  6 fist top
+  [2, 3, 1, 1, 1, 1, 1, 1, 2, 0],  //  7 thumb nub — outline steps left, highlight inside
+  [2, 3, 1, 1, 1, 1, 1, 1, 2, 0],  //  8 thumb nub
+  [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  //  9 fist (thumb over)
+  [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  // 10 fist bottom
+  [0, 0, 2, 1, 1, 1, 1, 2, 0, 0],  // 11 wrist — steps in 1 each side
+  [0, 0, 2, 1, 1, 1, 1, 2, 0, 0],  // 12 wrist
+  [0, 0, 4, 4, 4, 4, 4, 4, 0, 0],  // 13 sleeve at wrist width
+  [0, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 14 sleeve flares
+  [4, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 15 sleeve full
+  [4, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 16
+  [4, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 17 (no closing bottom)
 ]
 
 // yOffsetCells: 0 = base (2 rows clipped), -2 = fully visible
