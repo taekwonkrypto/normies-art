@@ -22,6 +22,62 @@ const COLORWAYS = [
 
 const ANIM_NAMES = ['STATIC', 'GLITCH', 'BREATHE', 'RAIN', 'SCANLINE', 'DISINTEGRATE']
 
+// 1=hand(gray)  2=outline(near-black)  3=highlight(near-white)  4=sleeve
+const HAND_COLORS = {
+  1: '#c0c0c0',
+  2: '#333333',
+  3: '#e8e8e8',
+  4: '#222222',
+}
+
+const HAND_WIDTH  = 10
+const HAND_HEIGHT = 18
+const HAND_X_COL  = GRID - HAND_WIDTH - 6   // col 24 — 6 left of right edge
+const HAND_Y_BASE = GRID - HAND_HEIGHT + 2  // row 24 — 2 cells below fully visible
+
+//              0  1  2  3  4  5  6  7  8  9
+const HAND_SHAPE = [
+  [0, 0, 0, 2, 2, 2, 0, 0, 0, 0],  //  0 fingertip (1-cell wide cap)
+  [0, 0, 0, 2, 3, 2, 0, 0, 0, 0],  //  1 nail
+  [0, 0, 0, 2, 3, 2, 0, 0, 0, 0],  //  2 nail
+  [0, 0, 0, 2, 1, 2, 0, 0, 0, 0],  //  3 finger
+  [0, 0, 0, 2, 1, 2, 0, 0, 0, 0],  //  4 finger
+  [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],  //  5 knuckle widens (right shifted in 1)
+  [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  //  6 fist top
+  [2, 3, 1, 1, 1, 1, 1, 1, 2, 0],  //  7 thumb nub — outline steps left, highlight inside
+  [2, 3, 1, 1, 1, 1, 1, 1, 2, 0],  //  8 thumb nub
+  [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  //  9 fist (thumb over)
+  [0, 2, 1, 1, 1, 1, 1, 1, 2, 0],  // 10 fist bottom
+  [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],  // 11 wrist — right shifted in 1
+  [0, 0, 2, 1, 1, 1, 2, 0, 0, 0],  // 12 wrist
+  [0, 0, 4, 4, 4, 4, 4, 0, 0, 0],  // 13 sleeve at wrist width
+  [0, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 14 sleeve flares
+  [4, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 15 sleeve full
+  [4, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 16
+  [4, 4, 4, 4, 4, 4, 4, 4, 4, 0],  // 17 (no closing bottom)
+]
+
+// yOffsetCells: 0 = base (2 rows clipped), -2 = fully visible
+const HAND_STEPS   = [0, -1, -2, -1]
+const HAND_STEP_MS = 380
+
+function drawHandOverlay(canvas, yOffsetCells) {
+  const ctx  = canvas.getContext('2d')
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+  const baseX = HAND_X_COL * CELL
+  const baseY = (HAND_Y_BASE + yOffsetCells) * CELL
+  for (let row = 0; row < HAND_SHAPE.length; row++) {
+    const py = baseY + row * CELL
+    if (py >= SIZE) continue
+    for (let col = 0; col < HAND_SHAPE[row].length; col++) {
+      const v = HAND_SHAPE[row][col]
+      if (!v) continue
+      ctx.fillStyle = HAND_COLORS[v]
+      ctx.fillRect(baseX + col * CELL, py, CELL, CELL)
+    }
+  }
+}
+
 function rand(min, max) {
   return Math.random() * (max - min) + min
 }
@@ -58,8 +114,10 @@ export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
   const [animation, setAnimation] = useState('STATIC')
   const [colorway,  setColorway]  = useState('original')
   const [gifState,  setGifState]  = useState(null) // null | 'recording' | 'encoding'
+  const [showHand,  setShowHand]  = useState(false)
 
-  const canvasRef = useRef(null)
+  const canvasRef  = useRef(null)
+  const overlayRef = useRef(null)
 
   async function loadById(id) {
     setLoading(true)
@@ -104,6 +162,30 @@ export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
     loadById(sharedId)
   }, [sharedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Animate the hand overlay — bobs up 2 cells then back down
+  useEffect(() => {
+    const canvas = overlayRef.current
+    if (!canvas) return
+    if (!showHand) {
+      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+      return
+    }
+    let step         = 0
+    let lastStepTime = null
+    let rafId
+    function tick(now) {
+      if (!lastStepTime) lastStepTime = now
+      if (now - lastStepTime >= HAND_STEP_MS) {
+        step         = (step + 1) % HAND_STEPS.length
+        lastStepTime = now
+      }
+      drawHandOverlay(canvas, HAND_STEPS[step])
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
+  }, [showHand])
+
   async function downloadGif() {
     const canvas = canvasRef.current
     if (!canvas || normieId === null || gifState !== null) return
@@ -143,6 +225,7 @@ export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
           const fCtx = frame.getContext('2d')
           fCtx.imageSmoothingEnabled = false
           fCtx.drawImage(canvas, 0, 0, OUT, OUT)
+          if (showHand && overlayRef.current) fCtx.drawImage(overlayRef.current, 0, 0, OUT, OUT)
           gif.addFrame(frame, { delay: FRAME_MS, copy: true })
           if (++count >= totalFrames) { clearInterval(interval); resolve() }
         }, FRAME_MS)
@@ -524,6 +607,7 @@ export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
 
       <div className="animate-canvas-wrap">
         <canvas ref={canvasRef} width={SIZE} height={SIZE} className="animate-canvas" />
+        <canvas ref={overlayRef} width={SIZE} height={SIZE} className="hand-overlay-canvas" />
       </div>
 
       <div className="anim-selector">
@@ -551,6 +635,14 @@ export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
                 {cw.label}
               </button>
             ))}
+          </div>
+          <div className="effects-row" style={{ marginTop: 8 }}>
+            <button
+              className={`effect-btn${showHand ? ' active' : ''}`}
+              onClick={() => setShowHand(v => !v)}
+            >
+              BIRD
+            </button>
           </div>
           <button
             className="download-btn"
