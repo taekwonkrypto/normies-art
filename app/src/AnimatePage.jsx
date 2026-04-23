@@ -22,35 +22,56 @@ const COLORWAYS = [
 
 const ANIM_NAMES = ['STATIC', 'GLITCH', 'BREATHE', 'RAIN', 'SCANLINE', 'DISINTEGRATE']
 
-const HAND_OUTLINE = '#111111'
-const HAND_FILL    = '#3a3a3a'
-const HAND_X = 24
-const HAND_Y = 17
+// 1=skin  2=outline(dark brown)  3=nail  4=sleeve(blue)  5=shadow
+const HAND_COLORS = {
+  1: '#f0c080',
+  2: '#5c2800',
+  3: '#f8e0b0',
+  4: '#4878c8',
+  5: '#d08840',
+}
 
-// 0=transparent, 1=fill, 2=outline
+const HAND_WIDTH  = 9
+const HAND_HEIGHT = 15
+const HAND_X_COL  = GRID - HAND_WIDTH        // col 31 — flush to right edge
+const HAND_Y_BASE = GRID - HAND_HEIGHT + 2   // row 27 — 2 cells below fully visible
+
+//              0  1  2  3  4  5  6  7  8
 const HAND_SHAPE = [
-  [0, 0, 2, 2, 2, 0, 0],
-  [0, 2, 1, 1, 1, 2, 0],
-  [0, 2, 1, 1, 1, 2, 0],
-  [0, 2, 1, 1, 1, 2, 0],
-  [0, 2, 1, 1, 1, 2, 0],
-  [2, 2, 1, 1, 1, 2, 2],
-  [2, 1, 1, 1, 1, 1, 2],
-  [2, 1, 1, 1, 1, 1, 2],
-  [2, 1, 1, 1, 1, 1, 2],
-  [2, 1, 1, 1, 1, 1, 2],
-  [0, 2, 2, 2, 2, 2, 0],
+  [0, 0, 2, 2, 2, 0, 0, 0, 0],  //  0 fingertip
+  [0, 0, 2, 3, 2, 0, 0, 0, 0],  //  1 nail
+  [0, 0, 2, 3, 2, 0, 0, 0, 0],  //  2 nail
+  [0, 0, 2, 1, 2, 0, 0, 0, 0],  //  3 finger
+  [0, 0, 2, 1, 2, 0, 0, 0, 0],  //  4 finger
+  [0, 2, 1, 1, 1, 2, 0, 0, 0],  //  5 knuckle
+  [2, 5, 1, 1, 1, 1, 2, 0, 0],  //  6 fist top / thumb
+  [2, 5, 1, 1, 1, 1, 1, 2, 0],  //  7 fist
+  [2, 1, 1, 1, 1, 1, 1, 2, 0],  //  8 fist
+  [2, 1, 1, 1, 1, 1, 1, 2, 0],  //  9 fist
+  [0, 2, 2, 1, 1, 2, 2, 0, 0],  // 10 fist bottom
+  [0, 0, 2, 4, 4, 2, 0, 0, 0],  // 11 sleeve narrow
+  [0, 2, 4, 4, 4, 4, 2, 0, 0],  // 12 sleeve wide
+  [0, 2, 4, 4, 4, 4, 2, 0, 0],  // 13 sleeve wide
+  [0, 2, 2, 2, 2, 2, 0, 0, 0],  // 14 sleeve bottom
 ]
 
-function drawHandOverlay(canvas) {
-  const ctx = canvas.getContext('2d')
+// yOffsetCells: 0 = base (2 rows clipped), -2 = fully visible
+const HAND_STEPS   = [0, -1, -2, -1]
+const HAND_STEP_MS = 380
+
+function drawHandOverlay(canvas, yOffsetCells) {
+  const ctx  = canvas.getContext('2d')
   ctx.clearRect(0, 0, canvas.width, canvas.height)
+  const baseX = HAND_X_COL * CELL
+  const baseY = (HAND_Y_BASE + yOffsetCells) * CELL
   for (let row = 0; row < HAND_SHAPE.length; row++) {
+    const py = baseY + row * CELL
+    if (py >= SIZE) continue
     for (let col = 0; col < HAND_SHAPE[row].length; col++) {
       const v = HAND_SHAPE[row][col]
-      if (v === 0) continue
-      ctx.fillStyle = v === 2 ? HAND_OUTLINE : HAND_FILL
-      ctx.fillRect((HAND_X + col) * CELL, (HAND_Y + row) * CELL, CELL, CELL)
+      if (!v) continue
+      ctx.fillStyle = HAND_COLORS[v]
+      ctx.fillRect(baseX + col * CELL, py, CELL, CELL)
     }
   }
 }
@@ -138,15 +159,28 @@ export default function AnimatePage({ sharedId = null, onIdLoad } = {}) {
     loadById(sharedId)
   }, [sharedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Draw or clear the hand overlay canvas
+  // Animate the hand overlay — bobs up 2 cells then back down
   useEffect(() => {
     const canvas = overlayRef.current
     if (!canvas) return
-    if (showHand) {
-      drawHandOverlay(canvas)
-    } else {
+    if (!showHand) {
       canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+      return
     }
+    let step         = 0
+    let lastStepTime = null
+    let rafId
+    function tick(now) {
+      if (!lastStepTime) lastStepTime = now
+      if (now - lastStepTime >= HAND_STEP_MS) {
+        step         = (step + 1) % HAND_STEPS.length
+        lastStepTime = now
+      }
+      drawHandOverlay(canvas, HAND_STEPS[step])
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
   }, [showHand])
 
   async function downloadGif() {
