@@ -22,37 +22,38 @@ const COLORWAYS = [
 
 const ANIM_NAMES = ['STATIC', 'GLITCH', 'BREATHE', 'RAIN', 'SCANLINE', 'DISINTEGRATE']
 
-// 1=skin  2=outline(dark brown)  3=nail  4=sleeve(blue)  5=shadow
+// 1=hand(gray)  2=outline(near-black)  3=highlight(near-white)  4=sleeve(black)
 const HAND_COLORS = {
-  1: '#f0c080',
-  2: '#5c2800',
-  3: '#f8e0b0',
-  4: '#4878c8',
-  5: '#d08840',
+  1: '#c0c0c0',
+  2: '#1a1a1a',
+  3: '#e8e8e8',
+  4: '#000000',
 }
 
 const HAND_WIDTH  = 9
-const HAND_HEIGHT = 15
-const HAND_X_COL  = GRID - HAND_WIDTH        // col 31 — flush to right edge
-const HAND_Y_BASE = GRID - HAND_HEIGHT + 2   // row 27 — 2 cells below fully visible
+const HAND_HEIGHT = 17
+const HAND_X_COL  = GRID - HAND_WIDTH - 6   // col 25 — 6 left of right edge
+const HAND_Y_BASE = GRID - HAND_HEIGHT + 2  // row 25 — 2 cells below fully visible
 
 //              0  1  2  3  4  5  6  7  8
 const HAND_SHAPE = [
   [0, 0, 2, 2, 2, 0, 0, 0, 0],  //  0 fingertip
-  [0, 0, 2, 3, 2, 0, 0, 0, 0],  //  1 nail
-  [0, 0, 2, 3, 2, 0, 0, 0, 0],  //  2 nail
+  [0, 0, 2, 3, 2, 0, 0, 0, 0],  //  1 highlight
+  [0, 0, 2, 3, 2, 0, 0, 0, 0],  //  2 highlight
   [0, 0, 2, 1, 2, 0, 0, 0, 0],  //  3 finger
   [0, 0, 2, 1, 2, 0, 0, 0, 0],  //  4 finger
   [0, 2, 1, 1, 1, 2, 0, 0, 0],  //  5 knuckle
-  [2, 5, 1, 1, 1, 1, 2, 0, 0],  //  6 fist top / thumb
-  [2, 5, 1, 1, 1, 1, 1, 2, 0],  //  7 fist
+  [2, 3, 1, 1, 1, 1, 2, 0, 0],  //  6 fist top + thumb highlight
+  [2, 3, 1, 1, 1, 1, 1, 2, 0],  //  7 fist
   [2, 1, 1, 1, 1, 1, 1, 2, 0],  //  8 fist
   [2, 1, 1, 1, 1, 1, 1, 2, 0],  //  9 fist
-  [0, 2, 2, 1, 1, 2, 2, 0, 0],  // 10 fist bottom
-  [0, 0, 2, 4, 4, 2, 0, 0, 0],  // 11 sleeve narrow
-  [0, 2, 4, 4, 4, 4, 2, 0, 0],  // 12 sleeve wide
-  [0, 2, 4, 4, 4, 4, 2, 0, 0],  // 13 sleeve wide
-  [0, 2, 2, 2, 2, 2, 0, 0, 0],  // 14 sleeve bottom
+  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 10 sleeve (solid black, no outline)
+  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 11 sleeve
+  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 12 sleeve
+  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 13 sleeve
+  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 14 sleeve
+  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 15 sleeve
+  [4, 4, 4, 4, 4, 4, 4, 4, 0],  // 16 sleeve (no closing bottom)
 ]
 
 // yOffsetCells: 0 = base (2 rows clipped), -2 = fully visible
