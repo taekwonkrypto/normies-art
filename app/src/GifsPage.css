@@ -27,6 +27,8 @@
 .gifs-canvas {
   display: block;
   image-rendering: pixelated;
+  max-width: 100%;
+  height: auto;
 }
 
 .gifs-panel {
